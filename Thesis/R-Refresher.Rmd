@@ -1,0 +1,253 @@
+---
+title: "R Review"
+author: "Christelinda Laureijs"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    css: "../Templates/my-CSS-theme.css"
+    df_print: paged
+    toc: true
+    toc_depth: 2
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+  github_document:
+    html_preview: false
+---
+
+```{r include=F}
+library(here)
+library(dplyr)
+library(ggplot2)
+```
+
+Here are some chunks and code examples if you need a refresher with R.
+
+```{r r-calculator}
+# You can use R as a calculator
+2+3
+
+3*5
+
+2/5
+```
+
+```{r assign-variables}
+# You can assign values to variables
+# Make x equal to 2
+x <- 2
+
+# Use variables in equations
+3*x
+
+x + 2
+```
+
+
+```{r making-lists}
+# Defining lists in R
+
+number_list <- c(1, 9, 8, 3, 4, 2, 2)
+
+
+# Use functions like mean()
+mean(number_list)
+max(number_list)
+min(number_list)
+```
+
+## Importing data
+
+The following sample code is for a project where the goal was to analyze changes in a neuron's current amplitude over time.
+
+```{r import-data}
+# Import cell data from "Sample-data.csv"
+# This comes from the folder Data/
+# Header = True because I already have named my columns
+
+raw_df <- read.csv(here("Data/Sample-data.csv"), header = T)
+```
+
+```{r head-data}
+# Get a preview of the first few rows of the data
+head(raw_df)
+```
+
+```{r mutate-data}
+# Clampex records negative values for currents
+# Negative transform P1 and P2
+
+raw_df <- raw_df %>%
+  mutate(
+    P1 = P1*-1,
+    P2 = P2*-1
+  )
+```
+
+## Filter data
+
+```{r filtering}
+# Show cells from male rats only
+
+raw_df %>%
+  filter(Sex == "Male")
+```
+
+## Dealing with errors
+
+R is very picky about typos, upper-case vs. lower-case, and other details. What are the mistakes below?
+
+```{r errors, eval=F}
+# What is the mistake below?
+raw_df %>%
+   filter(sex == "Male")
+```
+
+```{r errors-two, eval=F}
+# What is the problem below?
+raw_df %>%
+  filter(Sex = "Female")
+```
+
+```{r errors-three, eval=F}
+# What is wrong with the code below?
+raw_df %>%
+  filter(Sex == "Female"')
+
+```
+
+## Plotting
+
+The goal is to make a scatterplot of P1 vs. Time for various cells. First, I am showing an example of plotting filtering just one recording of interest. This has the ID "L".
+
+```{r filter-l}
+# Filter one recording of interest
+cell_L <- raw_df %>%
+  filter(Letter == "L")
+```
+
+```{r plot-l}
+# Plot cell L only
+# P1 is on the y-axis
+# Time is on the x-axis
+# Use geom_point() because this is a scatterplot
+
+ggplot(cell_L, aes(x = Time, y = P1)) +
+  geom_point()
+```
+
+
+To add customizations to your plot, you can keep adding new layers. The first layer that I'm adding here is the labs() layer to make more informative axis titles.
+
+```{r plot-l-axis-labels}
+# Example: adding better axis labels
+ggplot(cell_L, aes(x = Time, y = P1)) +
+  geom_point() +
+  labs(
+    x = "Time (min)",
+    y = "eEPSC amplitude (pA)"
+  )
+```
+
+I recorded cells in 5-minute intervals. I included `color = ID` to colour each recording separately. This is just to show an example of how you can include additional variables in a plot.
+
+```{r plot-l-color-id}
+# Color by ID
+ggplot(cell_L, aes(x = Time, y = P1, color = ID)) +
+  geom_point() +
+  theme_classic()
+```
+
+You can use `ggplot` to make beautiful plots very easily. Here are some examples that show some of ggplot's capabilities.
+
+The plot below shows the data for all of my cells on the same plot. I used `color = Letter` to make each cell a different colour.
+
+
+```{r plot-all-cells}
+# Plot all cells
+# Use a different color for each recording
+
+ggplot(raw_df, aes(x = Time, y = P1, color = Letter)) +
+  geom_point() +
+  theme_minimal() +
+  theme(legend.position = "none") # hide legend
+```
+
+In Excel and Prism, it is very difficult to make faceted plots. R makes this very simple. Here is a faceted plot showing all of the cells from male rats with the PPP treatment applied. It is *much* easier to use facet plots instead of creating individual scatterplots for each letter.
+
+```{r facet-plot}
+raw_df %>%
+  filter(Sex == "Female" & Treatment == "PPP") %>%
+  ggplot(aes(x = Time, y = P1, color = Letter)) +
+  geom_point() +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  facet_wrap(.~Letter, ncol = 3)
+```
+
+### Plot Customization
+
+Often you'll want to change the default ggplot themes and colours. To save yourself from retyping the same style changes for each plot, you can define a theme that will be applied to all ggplot2 themes. You should experiment to find a ggplot theme that works for your project, but here is one example that could work well for a publication. This theme increases the axis font sizes and removes the default gray background.
+
+```{r set-ggplot2-theme}
+theme_set(
+  theme_classic() %+replace%
+    theme(
+        plot.title = element_text(
+        color = "black",
+        size = 20,
+        margin = margin(b = 25),
+        hjust = 0.5
+      ),
+      plot.margin = margin(25, 25, 25, 25),
+      plot.caption = element_text(
+        hjust = 0,
+        size = 12
+      ),
+      plot.caption.position = "plot",
+      axis.text = element_text(
+        size = 12,
+        color = "black"
+      ),
+      axis.title = element_text(
+        size = 16,
+        face = "bold"
+      ),
+      axis.title.y = element_text(
+        margin = margin(r = 25),
+        angle = 90,
+        vjust = 0.5
+      ),
+      axis.title.x = element_text(margin = margin(b = 25, t = 20)),
+      axis.ticks = element_blank(),
+      strip.background = element_rect(color = NA, fill = NA),
+      strip.text = element_text(size = 20)
+    )
+)
+
+plot_colour <- "darkmagenta"
+```
+
+```{r}
+ggplot(cell_L, aes(x = Time, y = P1)) +
+  geom_point(color = plot_colour) +
+  labs(
+    x = "Time (min)",
+    y = "eEPSC amplitude (pA)"
+  )
+```
+
+
+## Practice
+
+If you want some extra practice, try changing the code and seeing what happens. You can also try these questions.
+
+1a. Create a variable called "y" and assign it to a value of 25.
+1b. Use a function to calculate the square root of y.
+
+2a. Filter the data to only include cells where I applied a certain treatment.
+2b. Filter the data to only include cells from male rats in the control condition. (Hint: Use the & symbol to connect two conditions).
+
+3a. Make a plot of P1 vs. Time for recording "AA".
+3b. Make a plot of P1 vs. Time for female rats only.
+3c. Make a plot of P1 vs. Time for PPP-treated cells only, and color it by cell.
