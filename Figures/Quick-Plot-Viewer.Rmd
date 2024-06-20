@@ -1,0 +1,807 @@
+---
+title: "Quick Plot Viewer"
+author: "Christelinda Laureijs"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    css: "../Templates/my-CSS-theme.css"
+    toc: true
+    toc_depth: 2
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+  github_document:
+    html_preview: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = F,
+  comment = "",
+  message = F,
+  warning = F,
+  fig.width = 14
+)
+
+if (knitr::is_latex_output()) {
+  knitr::opts_chunk$set(dev = "cairo_pdf")
+} else
+  (knitr::opts_chunk$set(dev = "png", dpi = 300)
+  )
+```
+
+```{r load-libraries, include=F}
+library(here)
+library(ggplot2)
+library(dplyr)
+library(extrafont) # Required for custom fonts in plots
+library(ggtext) # Required for formatting plot text (e.g. coloured text in title)
+library(glue) # Required for easy mixing of variables and text
+library(grid) # Required for rasterGrob function to have a background image on a plot
+library(gridExtra) # Required for more rasterGrob functions on cell coordinates plot
+library(ggforce) # Required for sina plots
+library(patchwork) # Required for multi-plot layout
+library(rstatix) # Required for t-tests within tidyverse framework
+library(tidyr)
+library(broom)
+library(lazyWeave) # Provides pvalString
+library(knitr)
+library(ggsignif) # Required for significance stars and brackets on plots
+library(abftools)
+
+# This script file contains my functions for pruning the data and creating plots of P1 vs. Time
+# I sourced these to an external file to reduce the length of my code
+
+# Set local = knitr::knit_global() to ensure that the script uses THIS document's directory,
+# not the Scripts/ folder
+
+source(here("Scripts", "Functions.R"), local = knitr::knit_global())
+```
+
+```{r set-plot-options}
+# ---------- Set plot options --------------------------------------------------------------------------------
+# Set save_choice to "yes" if you want to save plots (! this will increase the run time; generally only run this after adding new data)
+# Saved plots will automatically go to Figures/Output-... folders depending on what type they are
+# E.g. Raw plots of the first evoked current over time (P1 vs. Time) will go into Figures/Output-individual-plots
+
+save_choice <- "no"
+
+# Set colours here only for consistency
+
+line_col <- "#333333" # Sets colour of x and y-axes
+my_colours <-
+  c("#6600cc",
+    "#0093fb",
+    "#55b323",
+    "#ffe70f",
+    "#e86c00",
+    "#333333")
+my_colours_pale <-
+  c("#b080e0",
+    "#5cb9fa",
+    "#92d46e",
+    "#ebdf05",
+    "#f58c31",
+    "#b1b1b1")
+
+# Required for better contrast between the sexes in summary plots
+# Do NOT use these for any of the raw P1 vs. Time plots because they are too pale and/or too dark
+my_colours_very_dark <-
+  c("#4d0299",
+    "#026bb5",
+    "#398511",
+    "#a69502",
+    "#994700",
+    "#000000")
+my_colours_very_pale <-
+  c("#d6b8f5",
+    "#8fd0ff",
+    "#aee691",
+    "#ebdf05",
+    "#ffc38f",
+    "#dcdcdc")
+
+# Set default colours and point sizes for action potential summary plots
+mean_point_colour <- "#000000"
+control_group_colour <- "#727a85"
+insulin_group_colour <- "#0093fb"
+
+mean_point_size <- 0.5
+geom_sina_size <- 3
+geom_signif_text_size <- 8
+
+AP_trace_size <- 0.8
+scale_bar_shift_y <- 5
+scale_bar_shift_x <- 30
+
+# These sizes work better for the multi-plot figure in the PDF output
+if (knitr::is_latex_output()) {
+  geom_sina_size <- 2
+  geom_signif_text_size <- 4
+  AP_trace_size <- 0.6
+  scale_bar_shift_y <- 13
+  scale_bar_shift_x <- 200
+}
+
+
+if (knitr::is_html_output()) {
+  geom_sina_size <- 2
+  geom_signif_text_size <- 4
+  AP_trace_size <- 0.6
+  scale_bar_shift_y <- 13
+  scale_bar_shift_x <- 200
+}
+
+
+# Custom fonts may cause issues depending on what fonts you have in your system
+# Troubleshooting steps:
+# Try changing the font to one that you have on your computer
+# If it does not work, you could always delete 'family = plot_font_family' in the ggplot theme set below
+plot_font_family <- "Segoe UI"
+plot_light_font_family <- "Segoe UI Light"
+significance_stars_font <- plot_font_family
+
+# A consistent y-axis enables comparison across multiple experiments, treatments, etc.
+# This is not applied to the raw plots of eEPSCs vs. time for individual cells
+# If you change this from 175, make sure to regenerate all summary plots so that you can compare across the same y-axis.
+
+y_axis_limit <- 175
+PPR_y_min <- 0
+PPR_y_max <- 5
+```
+
+```{r set-ggplot2-theme}
+# ----------- Set ggplot theme ----------------------------------------------------------------------------------
+# Formatting changes like increasing font size & removing gray background
+# Requires the extrafont() package (loaded in the load-libraries chunk) for custom font.
+
+modified_theme_classic <- theme_classic() +
+  theme(
+    text = element_text(family = plot_font_family),
+    plot.title = element_text(
+      color = "black",
+      size = 20,
+      family = plot_font_family,
+      # face = "plain",
+      margin = margin(b = 25),
+      hjust = 0.5
+    ),
+    plot.margin = margin(25, 25, 25, 25),
+    plot.caption = element_text(
+      hjust = 0,
+      family = plot_font_family,
+      size = 12
+    ),
+    plot.caption.position = "plot",
+    axis.text = element_text(size = 12,
+                             color = "black"),
+    axis.title = element_text(size = 16,
+                              face = "bold"),
+    axis.title.y = element_text(
+      margin = margin(r = 25),
+      angle = 90,
+      vjust = 0.5
+    ),
+    axis.title.x = element_text(margin = margin(b = 25, t = 20)),
+    axis.ticks = element_blank(),
+    strip.background = element_rect(color = NA, fill = NA),
+    strip.text = element_text(size = 20)
+  )
+
+theme_set(modified_theme_classic)
+
+modified_facet_theme <- modified_theme_classic +
+  theme(
+    legend.position = "none",
+    axis.line.x = element_line(color = "gray"),
+    axis.line.y = element_line(color = "gray"),
+    panel.spacing = unit(2, "lines"),
+    plot.title = element_text(family = plot_light_font_family,
+                              size = 40),
+    plot.subtitle = element_text(
+      size = 20,
+      hjust = 0.5,
+      margin = margin(b = 50)
+    )
+  )
+```
+
+```{r load-RDS-files}
+raw_df <- readRDS(here("Data/Output-Data-from-R/raw_df.RDS"))
+
+pruned_df_individual_cells <-
+  readRDS(here("Data/Output-Data-from-R/pruned_df_individual_cells.RDS"))
+
+t_test_eEPSCs <-
+  readRDS(here("Data/Output-Data-from-R/t_test_eEPSCs.RDS"))
+
+pruned_df <- readRDS(here("Data/Output-Data-from-R/pruned_df.RDS"))
+```
+
+
+```{r get-number-of-rows}
+nrows <- raw_df %>%
+  group_by(Treatment, Sex, Category) %>%
+  summarize(n_cells = length(unique(Letter))) %>%
+  mutate(
+    nrows = plyr::round_any(n_cells, 3, ceiling) / 3,
+    plot_height = case_when(nrows == 1 ~ 7,
+                            nrows == 2 ~ 10,
+                            T ~ nrows * 4)
+  )
+```
+
+```{r quick-plot-ap-traces, fig.width = 12, fig.height = 8, eval=F}
+# The recording was digitized at 10 kHz
+# Therefore 1 ms = 10 time units in the recording
+
+scale_bar_x_in_recording_time_units <- 500
+scale_bar_y_in_mV <- 20
+scale_bar_start_x <- 7000
+scale_bar_start_y <- 20
+
+ap_trace_control <-
+  make_AP_trace_plot(file_ID = 23821007,
+                     sweep = "epi10",
+                     trace_color = control_group_colour) +
+  annotate(
+    "segment",
+    x = scale_bar_start_x,
+    xend = scale_bar_start_x + scale_bar_x_in_recording_time_units,
+    y = scale_bar_start_y,
+    yend = scale_bar_start_y,
+    lwd = 0.4
+  ) +
+  annotate(
+    "segment",
+    x = scale_bar_start_x,
+    xend = scale_bar_start_x,
+    y = scale_bar_start_y-0.49,
+    yend = scale_bar_start_y + scale_bar_y_in_mV,
+    lwd = 0.4
+  ) +
+  annotate(
+    "text",
+    x = scale_bar_start_x - scale_bar_shift_x,
+    y = scale_bar_start_y + 10,
+    label = paste0(scale_bar_y_in_mV, " mV"),
+    hjust = 1,
+    family = plot_font_family
+  ) +
+  annotate(
+    "text",
+    x = scale_bar_start_x + 1/2*(scale_bar_x_in_recording_time_units),
+    y = scale_bar_start_y - scale_bar_shift_y,
+    
+    # Recall that 1 recording time unit = 0.1 ms
+    # because it was filtered at 10 kHz
+    label = paste0(scale_bar_x_in_recording_time_units/10, " ms"),
+    hjust = 0.5,
+    family = plot_font_family
+  )
+
+ap_trace_insulin <-
+  make_AP_trace_plot(file_ID = 23821015,
+                     sweep = "epi10",
+                     trace_color = insulin_group_colour)
+
+dual_plot <- ap_trace_control / ap_trace_insulin
+
+dual_plot
+
+if (save_choice == "yes") {
+  ggsave(
+    plot = dual_plot,
+    path = here("Figures", "Output-summary-plots"),
+    file = "AP-step-10-representative-traces.png",
+    width = 7,
+    height = 5,
+    units = "in",
+    dpi = 300
+  )
+}
+```
+
+
+```{r add-representative-eEPSC-current, eval=T}
+# Add representative traces
+AV_representative_trace <-
+  png::readPNG(here(
+    "Figures/Representative-Traces/Female-Control-Trace-AV.png"
+  ))
+
+AV_representative_trace <- rasterGrob(AV_representative_trace)
+```
+
+
+
+```{r plot-tester, fig.width = 7, fig.height = 7, eval=F}
+cell <- "AV"
+raw_df %>%
+  filter(Letter == cell) %>%
+  filter(Time <= 25) %>%
+  {
+    ggplot(., aes(x = Time, y = P1)) +
+      geom_point(size = 1.5) +
+      geom_hline(aes(yintercept = baseline_mean), linetype = "dashed") +
+      labs(title = glue("Cell {cell}"))
+  } +
+  annotation_custom(
+    AV_representative_trace,
+    xmin = 10,
+    ymin = 60,
+    ymax = 120
+  )
+```
+
+# eEPSCs after Adding Insulin
+
+## Control
+
+```{r pruned-summary-plot-none, fig.width = 8, fig.height = 5, out.width = "100%"}
+make_pruned_summary_plots(category = 2,
+                         treatment = "Control",
+                         data = pruned_df,
+                         color_choice = 1,
+                         include_representative_trace = "no",
+                         representative_trace = female_control_trace,
+                         signif_stars = "no")
+```
+
+### Males {.tabset}
+
+#### Raw
+
+```{r raw-none-male}
+#| fig.height = nrows %>% filter(Treatment == "Control" & Sex == "Male" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "Control",
+  sex = "Male",
+  category = 2,
+  color_choice = 1
+)
+```
+
+#### Pruned
+
+```{r pruned-none-male}
+#| fig.height = nrows %>% filter(Treatment == "Control" & Sex == "Male" & Category == 2) %>% pull(plot_height)
+
+make_pruned_facet_plot(
+  pruned_df_individual_cells,
+  treatment = "Control",
+  sex = "Male",
+  category = 2,
+  color_choice = 1
+)
+```
+
+#### PPR
+
+```{r ppr-none-male}
+#| fig.height = nrows %>% filter(Treatment == "Control" & Sex == "Male" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "Control",
+  sex = "Male",
+  category = 2,
+  y_var = PPR,
+  color_choice = 1
+) +
+  coord_cartesian(ylim = c(PPR_y_min, PPR_y_max))
+```
+
+### Females {.tabset}
+
+#### Raw
+
+```{r raw-none-female}
+#| fig.height = nrows %>% filter(Treatment == "Control" & Sex == "Female" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "Control",
+  sex = "Female",
+  category = 2,
+  color_choice = 1
+)
+```
+
+#### Pruned
+
+```{r pruned-none-female}
+#| fig.height = nrows %>% filter(Treatment == "Control" & Sex == "Female" & Category == 2) %>% pull(plot_height)
+
+make_pruned_facet_plot(
+  data = pruned_df_individual_cells,
+  treatment = "Control",
+  sex = "Female",
+  category = 2,
+  color_choice = 1
+)
+```
+
+#### PPR
+
+```{r ppr-none-female}
+#| fig.height = nrows %>% filter(Treatment == "Control" & Sex == "Female" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "Control",
+  sex = "Female",
+  category = 2,
+  y_var = PPR,
+  color_choice = 1
+) +
+  coord_cartesian(ylim = c(PPR_y_min, PPR_y_max))
+```
+
+
+## HNMPA
+
+```{r HNMPA-summary, fig.width = 8, fig.height = 5, out.width = "100%"}
+make_pruned_summary_plots(category = 2,
+                          treatment = "HNMPA",
+                          data = pruned_df,
+                          color_choice = 5,
+                          include_representative_trace = "no",
+                          representative_trace = male_HNMPA_trace,
+                          signif_stars = "no")
+```
+
+### Males {.tabset}
+
+#### Raw
+
+```{r raw-HNMPA-male}
+#| fig.height = nrows %>% filter(Treatment == "HNMPA" & Sex == "Male" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "HNMPA",
+  sex = "Male",
+  category = 2,
+  color_choice = 5
+)
+```
+
+#### Pruned
+
+```{r pruned-HNMPA-male}
+#| fig.height = nrows %>% filter(Treatment == "HNMPA" & Sex == "Male" & Category == 2) %>% pull(plot_height)
+
+make_pruned_facet_plot(
+  data = pruned_df_individual_cells,
+  treatment = "HNMPA",
+  sex = "Male",
+  category = 2,
+  color_choice = 5
+)
+```
+
+#### PPR
+
+```{r ppr-HNMPA-male}
+#| fig.height = nrows %>% filter(Treatment == "HNMPA" & Sex == "Male" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "HNMPA",
+  sex = "Male",
+  category = 2,
+  y_var = PPR,
+  color_choice = 5
+) +
+  coord_cartesian(ylim = c(PPR_y_min, PPR_y_max))
+```
+
+
+### Females {.tabset}
+
+#### Raw
+
+```{r raw-HNMPA-female}
+#| fig.height = nrows %>% filter(Treatment == "HNMPA" & Sex == "Female" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "HNMPA",
+  sex = "Female",
+  category = 2,
+  color_choice = 5
+)
+```
+
+#### Pruned
+
+```{r pruned-HNMPA-female}
+#| fig.height = nrows %>% filter(Treatment == "HNMPA" & Sex == "Female" & Category == 2) %>% pull(plot_height)
+
+make_pruned_facet_plot(
+  data = pruned_df_individual_cells,
+  treatment = "HNMPA",
+  sex = "Female",
+  category = 2,
+  color_choice = 5
+)
+```
+
+#### PPR
+
+```{r ppr-HNMPA-female}
+#| fig.height = nrows %>% filter(Treatment == "HNMPA" & Sex == "Female" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "HNMPA",
+  sex = "Female",
+  category = 2,
+  y_var = PPR,
+  color_choice = 5
+) +
+  coord_cartesian(ylim = c(PPR_y_min, PPR_y_max))
+```
+
+## Fasting
+
+```{r fasting-summary, fig.width = 8, fig.height = 5, out.width = "100%"}
+make_pruned_summary_plots(category = 2,
+                         treatment = "Fasting",
+                         data = pruned_df,
+                         color_choice = 3,
+                         include_representative_trace = "no",
+                         representative_trace = male_fasting_trace,
+                         signif_stars = "no")
+```
+
+```{r fasting-presentation, eval=F}
+presentation_plot_fasting <-
+  make_presentation_plots(2,
+                          treatment = "Fasting",
+                          data = pruned_df,
+                          color_choice = 3) +
+  labs(title = "eEPSCs decrease significantly in fasted <b style='color:#398511'>males</b> & <b style='color:#92d46e'>females</b>")
+
+presentation_plot_fasting
+
+if (save_choice == "yes") {
+  ggsave(
+    presentation_plot_fasting,
+    path = here("Figures/Output-summary-plots"),
+    file = "Presentation-Plot-Fasting.png",
+    width = 12,
+    height = 7,
+    units = "in",
+    dpi = 300,
+    scaling = 1.5
+  )
+}
+```
+
+
+
+### Males {.tabset}
+
+#### Raw
+
+```{r raw-fasting-male}
+#| fig.height = nrows %>% filter(Treatment == "Fasting" & Sex == "Male" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "Fasting",
+  sex = "Male",
+  category = 2,
+  color_choice = 3
+)
+```
+
+#### Pruned
+
+```{r pruned-fasting-male}
+#| fig.height = nrows %>% filter(Treatment == "Fasting" & Sex == "Male" & Category == 2) %>% pull(plot_height)
+
+make_pruned_facet_plot(
+  data = pruned_df_individual_cells,
+  treatment = "Fasting",
+  sex = "Male",
+  category = 2,
+  color_choice = 3
+)
+```
+
+#### PPR
+
+```{r ppr-fasting-male}
+#| fig.height = nrows %>% filter(Treatment == "Fasting" & Sex == "Male" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "Fasting",
+  sex = "Male",
+  category = 2,
+  y_var = PPR,
+  color_choice = 3
+) +
+  coord_cartesian(ylim = c(PPR_y_min, PPR_y_max))
+```
+
+
+### Females {.tabset}
+
+#### Raw
+
+```{r raw-fasting-females}
+#| fig.height = nrows %>% filter(Treatment == "Fasting" & Sex == "Female" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "Fasting",
+  sex = "Female",
+  category = 2,
+  color_choice = 3
+)
+```
+
+#### Pruned
+
+```{r pruned-fasting-females}
+#| fig.height = nrows %>% filter(Treatment == "Fasting" & Sex == "Female" & Category == 2) %>% pull(plot_height)
+
+make_pruned_facet_plot(
+  data = pruned_df_individual_cells,
+  treatment = "Fasting",
+  sex = "Female",
+  category = 2,
+  color_choice = 3
+)
+```
+
+#### PPR
+
+```{r ppr-fasting-females}
+#| fig.height = nrows %>% filter(Treatment == "Fasting" & Sex == "Female" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "Fasting",
+  sex = "Female",
+  category = 2,
+  y_var = PPR,
+  color_choice = 3
+) +
+  coord_cartesian(ylim = c(PPR_y_min, PPR_y_max))
+```
+
+
+## PPP
+
+```{r summary-ppp, fig.width = 8, fig.height = 5, out.width = "100%"}
+make_pruned_summary_plots(category = 2,
+                         treatment = "PPP",
+                         data = pruned_df,
+                         color_choice = 2,
+                         include_representative_trace = "no",
+                         representative_trace = female_PPP_trace,
+                         signif_stars = "no")
+```
+
+```{r presentation-ppp, eval=F}
+presentation_plot_ppp <-
+  make_presentation_plots(2,
+                          treatment = "PPP",
+                          data = pruned_df,
+                          color_choice = 2) +
+  labs(title = "Current amplitudes decrease somewhat in <b style='color:#5cb9fa'>females</b> with PPP")
+
+presentation_plot_ppp
+
+if (save_choice == "yes") {
+  ggsave(
+    presentation_plot_ppp,
+    path = here("Figures/Output-summary-plots"),
+    file = "Presentation-Plot-PPP.png",
+    width = 12,
+    height = 7,
+    units = "in",
+    dpi = 300,
+    scaling = 1.5
+  )
+}
+```
+
+### Females {.tabset}
+
+#### Raw
+
+```{r raw-ppp-female}
+#| fig.height = nrows %>% filter(Treatment == "PPP" & Sex == "Female" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "PPP",
+  sex = "Female",
+  category = 2,
+  color_choice = 2
+)
+```
+
+#### Pruned
+
+```{r pruned-ppp-female}
+#| fig.height = nrows %>% filter(Treatment == "PPP" & Sex == "Female" & Category == 2) %>% pull(plot_height)
+
+make_pruned_facet_plot(
+  data = pruned_df_individual_cells,
+  treatment = "PPP",
+  sex = "Female",
+  category = 2,
+  color_choice = 2
+)
+```
+
+#### PPR
+
+```{r ppr-ppp-female}
+#| fig.height = nrows %>% filter(Treatment == "PPP" & Sex == "Female" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "PPP",
+  sex = "Female",
+  category = 2,
+  y_var = PPR,
+  color_choice = 2
+) +
+  coord_cartesian(ylim = c(PPR_y_min, PPR_y_max))
+```
+
+### Males {.tabset}
+
+#### Raw
+
+```{r raw-ppp-Male}
+#| fig.height = nrows %>% filter(Treatment == "PPP" & Sex == "Male" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "PPP",
+  sex = "Male",
+  category = 2,
+  color_choice = 2
+)
+```
+
+#### Pruned
+
+```{r pruned-ppp-Male}
+#| fig.height = nrows %>% filter(Treatment == "PPP" & Sex == "Male" & Category == 2) %>% pull(plot_height)
+
+make_pruned_facet_plot(
+  data = pruned_df_individual_cells,
+  treatment = "PPP",
+  sex = "Male",
+  category = 2,
+  color_choice = 2
+)
+```
+
+#### PPR
+
+```{r ppr-ppp-Male}
+#| fig.height = nrows %>% filter(Treatment == "PPP" & Sex == "Male" & Category == 2) %>% pull(plot_height)
+
+make_facet_plot(
+  data = raw_df,
+  treatment = "PPP",
+  sex = "Male",
+  category = 2,
+  y_var = PPR,
+  color_choice = 2
+) +
+  coord_cartesian(ylim = c(PPR_y_min, PPR_y_max))
+```
