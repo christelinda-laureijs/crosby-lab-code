@@ -463,8 +463,8 @@ make_summary_EPSC_data <- function(data, current_type) {
         age = unique(age),
         # unique() retains unmodified columns that still should be included
         animal = unique(animal),
-        x = unique(x),
-        y = unique(y),
+        X = unique(X),
+        Y = unique(Y),
         time = last(time)
       ) %>%
       ungroup()
@@ -2229,7 +2229,7 @@ make_PPR_plot_multiple_treatments <- function(data,
 # It converts the array into a 2d dataframe, and adds a new column with time in minutes
 import_ABF_file <-
   function(file_name) {
-    abf2_load(here(paste0("Data/ABF-Files/", file_name))) %>%
+    abf2_load(here(file_name)) %>%
       MeltAbf() %>%
       rename("current" = chan1, "voltage" = chan2) %>%
       rename_with(tolower) %>%

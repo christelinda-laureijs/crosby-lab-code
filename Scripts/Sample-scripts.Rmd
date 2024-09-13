@@ -1,0 +1,467 @@
+---
+title: Sample scripts
+author: "Christelinda Laureijs"
+---
+
+```{r set-global-options, echo=FALSE}
+knitr::opts_chunk$set(
+  dev = c("cairo_pdf"),  # High-quality plots with searchable text
+  dpi = 600,
+  fig.align = "center",
+  comment = NA,          # Remove double hash tags in output
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE
+)
+
+save_plot_pngs <- "no" # Default is "no" to decrease run-time
+```
+
+```{r load-libraries, include = FALSE}
+source(
+  here::here("Scripts/Libraries.R"),
+  local = knitr::knit_global(),
+  echo = FALSE,
+  verbose  = FALSE
+)
+
+source(here("Scripts/Functions.R"), local = knitr::knit_global())
+source(here("Templates/Theme-options.R"), local = knitr::knit_global())
+
+
+knitr::write_bib(file = here("Templates","packages.bib"))
+```
+
+
+# Add new cells
+
+# TODO create sample data to add
+
+```{r, eval=FALSE}
+add_new_cells(new_raw_data_csv = "Data/Raw-CSVs/eEPSC-data/ia-ic-id.csv",
+              cell_characteristics_csv = "Data/Sample-cell-characteristics.csv",
+              old_raw_data_csv = "Data/Sample-eEPSC-data.csv",
+              current_type = "eEPSC")
+```
+
+```{r, eval=FALSE}
+add_new_cells(new_raw_data_csv = "Data/AD-Only.csv",
+              cell_characteristics_csv = "Data/Sample-cell-characteristics.csv",
+              old_raw_data_csv = "Data/Sample-sEPSC-data.csv",
+              current_type = "sEPSC")
+```
+
+
+# Read in Data
+
+
+```{r read-eEPSC-data, include=F}
+make_normalized_EPSC_data(filename = "Data/Sample-eEPSC-data.csv",
+                          current_type = "eEPSC",
+                          min_time_value = 0,
+                          max_time_value = 25,
+                          interval_length = 5,
+                          baseline_length = 5)
+
+make_pruned_EPSC_data(data = raw_eEPSC_df,
+                      current_type = "eEPSC",
+                      min_time_value = 0,
+                      max_time_value = 25,
+                      baseline_length = 5,
+                      interval_length = 1)
+make_summary_EPSC_data(data = raw_eEPSC_df, current_type = "eEPSC")
+```
+
+```{r read-sEPSC-data}
+make_normalized_EPSC_data(filename = "Data/Sample-sEPSC-data.csv",
+                          current_type = "sEPSC",
+                          min_time_value = 0,
+                          max_time_value = 25,
+                          interval_length = 5,
+                          baseline_length = 5)
+
+make_pruned_EPSC_data(data = raw_sEPSC_df,
+                      current_type = "sEPSC",
+                      min_time_value = 0,
+                      max_time_value = 25,
+                      baseline_length = 5,
+                      interval_length = 1)
+make_summary_EPSC_data(data = pruned_sEPSC_df_individual_cells,
+                       current_type = "sEPSC")
+```
+
+# Baseline comparisons plots
+
+```{r baseline-comparisons-plot}
+make_baseline_comparison_plot(
+  data = summary_eEPSC_df,
+  include_all_treatments = "yes",
+  list_of_treatments = NULL,
+  current_type = "eEPSC",
+  parameter = "raw_amplitude",
+  baseline_interval = "t0to5",
+  large_axis_text = "no",
+  plot_width = 8
+)
+```
+
+```{r fig.width = 8}
+make_baseline_comparison_plot(
+  data = summary_sEPSC_df,
+  include_all_treatments = "yes",
+  list_of_treatments = NULL,
+  current_type = "sEPSC",
+  parameter = "raw_amplitude",
+  large_axis_text = "no",
+  baseline_interval = "t0to5",
+  plot_width = 8
+)
+```
+
+# Raw plots
+
+```{r eEPSC-data-make-individual-raw-plots, eval=F}
+eEPSC_individual_raw_plots <- pmap(
+  .l = treatment_names_and_colours,
+  .f = ~ with(
+  list(...),
+  make_raw_plots(
+    data = raw_eEPSC_df,
+    plot_treatment = treatment,
+    plot_category = 2,
+    current_type = "eEPSC",
+    parameter = "P1",
+    pruned = "no",
+    hormone_added = "Insulin"
+  )
+  )
+)
+
+eEPSC_individual_raw_plots
+```
+
+
+```{r}
+sEPSC_individual_raw_plots <- pmap(
+  .l = treatment_names_and_colours,
+  .f = ~ with(
+  list(...),
+  make_raw_plots(
+    data = raw_sEPSC_df,
+    plot_treatment = treatment,
+    plot_category = 2,
+    current_type = "sEPSC",
+    parameter = "amplitude",
+    pruned = "no",
+    hormone_added = "Insulin"
+  )
+  )
+)
+
+
+sEPSC_individual_raw_plots[[1]]
+```
+
+# Pruned plots
+
+```{r}
+eEPSC_individual_pruned_plots <- pmap(
+  .l = treatment_names_and_colours,
+  .f = ~ with(
+  list(...),
+  make_raw_plots(
+    data = pruned_eEPSC_df_individual_cells,
+    plot_treatment = treatment,
+    plot_category = 2,
+    current_type = "eEPSC",
+    parameter = "mean_P1",
+    pruned = "yes",
+    hormone_added = "Insulin"
+  )
+  )
+)
+
+eEPSC_mean_P1_pruned_plots_PPP_category_2
+```
+
+
+
+
+```{r sEPSC-data-make-individual-pruned-plots, eval=F}
+sEPSC_individual_raw_plots <- pmap(
+  .l = treatment_names_and_colours,
+  .f = ~ with(
+  list(...),
+  make_raw_plots(
+    data = pruned_sEPSC_df_individual_cells,
+    plot_treatment = treatment,
+    plot_category = 2,
+    current_type = "sEPSC",
+    parameter = "amplitude",
+    pruned = "yes",
+    hormone_added = "Insulin"
+  )
+  )
+)
+
+sEPSC_amplitude_pruned_plots_PPP_category_2
+```
+
+# Summary plots
+
+```{r}
+perform_t_tests_for_summary_plot(data = summary_eEPSC_df,
+                                 test_category = 2,
+                                 include_all_treatments = "yes",
+                                 parameter = "amplitude",
+                                 baseline_interval = "t0to5",
+                                 interval_length = 5,
+                                 list_of_treatments = NULL,
+                                 current_type = "eEPSC")
+```
+
+```{r}
+pmap(
+  .l = available_sEPSC_parameters,
+  .f = ~ with(
+    list(...),
+    perform_t_tests_for_summary_plot(data = summary_sEPSC_df,
+                                 test_category = 2,
+                                 include_all_treatments = "yes",
+                                 parameter = available_parameters,
+                                 baseline_interval = "t0to5",
+                                 interval_length = 5,
+                                 list_of_treatments = NULL,
+                                 current_type = "sEPSC")
+  )
+)
+    
+```
+
+
+```{r eEPSC-data-make-summary-plots, eval=T}
+eEPSC_summary_plots <- pmap(
+  .l = treatment_names_and_colours,
+  .f = ~ with(
+    list(...),
+    make_summary_plots(plot_category = 2,
+                   plot_treatment = treatment,
+                   data = pruned_eEPSC_df_all_cells,
+                   current_type = "eEPSC",
+                   parameter = "amplitude",
+                   include_representative_trace = "yes",
+                   signif_stars = "yes",
+                   hormone_added = "Insulin",
+                   large_axis_text = "no",
+                   shade_intervals = "no")
+  )
+)
+
+eEPSC_summary_plots
+```
+
+# TODO Fix this level sets of factors are different
+```{r}
+sEPSC_summary_plots <- pmap(
+  .l = sEPSC_parameters_and_treatments,
+  .f = ~ with(
+    list(...),
+    make_summary_plots(plot_category = 2,
+                   plot_treatment = treatment,
+                   data = pruned_sEPSC_df_all_cells,
+                   current_type = "sEPSC",
+                   parameter = parameter,
+                   include_representative_trace = "no",
+                   signif_stars = "yes",
+                   hormone_added = "Insulin",
+                   large_axis_text = "no",
+                   shade_intervals = "no")
+  )
+)
+
+sEPSC_summary_plots
+```
+
+
+```{r}
+make_variance_df(data = summary_eEPSC_df,
+                 df_category = 2,
+                 include_all_treatments = "yes",
+                 list_of_treatments = "HNMPA",
+                 hormone_added = "Insulin",
+                 baseline_interval = "t0to5",
+                 post_hormone_interval = "t20to25")
+```
+
+```{r fig.width = 12, fig.height = 12}
+make_facet_plot(data = raw_eEPSC_df,
+                plot_treatment = "PPP_and_HNMPA",
+                plot_category = 2,
+                plot_sex = "Female",
+                y_var = P1,
+                pruned = "no")
+```
+
+
+
+# PPR comparison
+
+```{r}
+make_PPR_before_vs_post_hormone_data(data = raw_eEPSC_df,
+                                     include_all_treatments = "yes",
+                                     list_of_treatments = NULL,
+                                     PPR_min = 0,
+                                     PPR_max = 5,
+                                     baseline_interval = "t0to5",
+                                     post_hormone_interval = "t20to25",
+                                     hormone_added = "Insulin")
+```
+
+```{r message=F, warning=F}
+eEPSC_PPR_plots <- pmap(
+  .l = treatment_names_and_colours,
+  .f = ~ with(
+    list(...),
+    make_PPR_plot_single_treatment(data = PPR_before_vs_post_hormone_data,
+                               plot_treatment = treatment,
+                               plot_category = 2,
+                               large_axis_text = "no",
+                               hormone_added = "Insulin")
+  )
+)
+
+eEPSC_PPR_plots
+```
+
+```{r, eval=F}
+t_test_PPR <- PPR_before_vs_post_hormone_data %>%
+  filter(category == 2) %>% 
+  mutate(
+    treatment = str_replace_all(
+        treatment,
+        setNames(treatment_names_and_colours$display_names, treatment_names_and_colours$treatment)
+      )
+  ) %>% 
+  group_by(treatment, letter, state) %>%
+  summarise(mean_PPR_cell = mean(PPR),
+            n = n()) %>%
+  ungroup() %>%
+  group_by(treatment) %>%
+  t_test(mean_PPR_cell ~ state,
+         ref.group = "Baseline",
+         paired = TRUE) %>%
+  mutate(
+    statistic = round(statistic, 2),
+    p_original = p,
+    p_string = pvalString(p),
+    significance_stars = symnum(
+      p,
+      symbols   = c("***", "**", "*", "ns"),
+      cutpoints = c(0,  .001, .01, .05, 1),
+      corr      = FALSE
+    )
+  ) %>%
+  arrange(match(treatment, treatment_names_and_colours$display_names))
+
+t_test_PPR
+```
+
+```{r}
+make_PPR_plot_multiple_treatments(data = PPR_before_vs_post_hormone_data,
+                             include_all_treatments = "yes",
+                             plot_category = 2,
+                             hormone_added = "Insulin",
+                             hormone_added_initial = "I")
+```
+
+
+```{r}
+eEPSC_cv_plots <- pmap(.l = treatment_names_and_colours, .f = ~ with(
+  list(...),
+  make_variance_comparison_plot(data = variance_df,
+                              plot_category = 2,
+                              plot_treatment = treatment,
+                              large_axis_text = "no",
+                              variance_measure = "cv",
+                              baseline_interval = "t0to5",
+                              post_hormone_interval = "t20to25",
+                              hormone_added = "Insulin")
+))
+
+eEPSC_VMR_plots <- pmap(.l = treatment_names_and_colours, .f = ~ with(
+  list(...),
+  make_variance_comparison_plot(data = variance_df,
+                              plot_category = 2,
+                              plot_treatment = treatment,
+                              large_axis_text = "no",
+                              variance_measure = "VMR",
+                              baseline_interval = "t0to5",
+                              post_hormone_interval = "t20to25",
+                              hormone_added = "Insulin")
+))
+
+eEPSC_cv_plots
+eEPSC_VMR_plots
+
+```
+
+
+# CV Plots
+
+```{r make-cv-plots}
+eEPSC_cv_plots <- pmap(.l = treatment_names_and_colours, .f = ~ with(
+  list(...),
+  make_cv_plot(
+    data = pruned_eEPSC_df_all_cells,
+    plot_treatment = treatment
+  )
+))
+
+eEPSC_cv_plots
+```
+
+
+# Representative traces
+
+```{r}
+BN_baseline <- import_ABF_file("23711004.abf")
+BN_insulin <- import_ABF_file("23711009.abf")
+
+
+
+make_representative_sp_trace(
+  recording_name = BN_baseline,
+  plot_treatment = "Control",
+  is_baseline = "yes",
+  include_scale_bar = "yes",
+  plot_episode = "epi1"
+)
+make_representative_sp_trace(
+  recording_name = BN_insulin,
+  plot_treatment = "Control",
+  is_baseline = "no",
+  include_scale_bar = "yes",
+  plot_episode = "epi1"
+)
+```
+
+# Spontaneous current comparisons
+
+```{r}
+pmap(
+  .l = sEPSC_parameters_and_treatments %>% filter(parameter %in% c("raw_amplitude", "raw_frequency")),
+  .f = ~ with(
+    list(...),
+    make_sEPSC_comparison_plot(
+      data = summary_sEPSC_df,
+      plot_category = 2,
+      plot_treatment = treatment,
+      parameter = parameter,
+      large_axis_text = "no",
+      hormone_added = "Insulin",
+      baseline_interval = "t0to5",
+      post_hormone_interval = "t20to25"
+    )
+  )
+)
+```
