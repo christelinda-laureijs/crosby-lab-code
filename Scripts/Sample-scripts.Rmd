@@ -14,7 +14,9 @@ knitr::opts_chunk$set(
   warning = FALSE
 )
 
-save_plot_pngs <- "no" # Default is "no" to decrease run-time
+# Default is "no" to decrease run-time
+save_plot_pngs <- "no" 
+save_RDS_files <- "no"
 ```
 
 ```{r load-libraries, include = FALSE}
@@ -35,17 +37,16 @@ knitr::write_bib(file = here("Templates","packages.bib"))
 
 # Add new cells
 
-# TODO create sample data to add
 
 ```{r, eval=FALSE}
-add_new_cells(new_raw_data_csv = "Data/Raw-CSVs/eEPSC-data/ia-ic-id.csv",
+add_new_cells(new_raw_data_csv = "____.csv",
               cell_characteristics_csv = "Data/Sample-cell-characteristics.csv",
               old_raw_data_csv = "Data/Sample-eEPSC-data.csv",
               current_type = "eEPSC")
 ```
 
 ```{r, eval=FALSE}
-add_new_cells(new_raw_data_csv = "Data/AD-Only.csv",
+add_new_cells(new_raw_data_csv = "____.csv",
               cell_characteristics_csv = "Data/Sample-cell-characteristics.csv",
               old_raw_data_csv = "Data/Sample-sEPSC-data.csv",
               current_type = "sEPSC")
@@ -260,7 +261,7 @@ eEPSC_summary_plots <- pmap(
 eEPSC_summary_plots
 ```
 
-# TODO Fix this level sets of factors are different
+
 ```{r}
 sEPSC_summary_plots <- pmap(
   .l = sEPSC_parameters_and_treatments,
@@ -287,17 +288,18 @@ sEPSC_summary_plots
 make_variance_df(data = summary_eEPSC_df,
                  df_category = 2,
                  include_all_treatments = "yes",
-                 list_of_treatments = "HNMPA",
+                 list_of_treatments = NULL,
                  hormone_added = "Insulin",
                  baseline_interval = "t0to5",
                  post_hormone_interval = "t20to25")
 ```
 
+
 ```{r fig.width = 12, fig.height = 12}
 make_facet_plot(data = raw_eEPSC_df,
-                plot_treatment = "PPP_and_HNMPA",
+                plot_treatment = "HNMPA",
                 plot_category = 2,
-                plot_sex = "Female",
+                plot_sex = "Male",
                 y_var = P1,
                 pruned = "no")
 ```
@@ -333,7 +335,7 @@ eEPSC_PPR_plots <- pmap(
 eEPSC_PPR_plots
 ```
 
-```{r, eval=F}
+```{r}
 t_test_PPR <- PPR_before_vs_post_hormone_data %>%
   filter(category == 2) %>% 
   mutate(
@@ -424,8 +426,8 @@ eEPSC_cv_plots
 # Representative traces
 
 ```{r}
-BN_baseline <- import_ABF_file("23711004.abf")
-BN_insulin <- import_ABF_file("23711009.abf")
+BN_baseline <- import_ABF_file("Data/23711004.abf")
+BN_insulin <- import_ABF_file("Data/23711009.abf")
 
 
 

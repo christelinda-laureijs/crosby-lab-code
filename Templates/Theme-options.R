@@ -1,6 +1,32 @@
 # Theme Options
-save_plot_pngs <- "no"
-save_RDS_files <- "no"
+
+treatment_names_and_colours <- data.frame(
+  treatment = c(
+    "Control",
+    "HNMPA",
+    "PPP",
+    "PPP_and_HNMPA"
+  ),
+  display_names = c(
+    "Control",
+    "HNMPA",
+    "PPP",
+    "PPP\n&\nHNMPA"
+  ),
+  colours = c(
+    "#6600cc",
+    "#e86c00",
+    "#0093fb",
+    "#411900"
+  ),
+  very_pale_colours = c(
+    "#d6b8f5",
+    "#ffc38f",
+    "#8fd0ff",
+    "#bf9b84"
+  )
+)
+
 
 # Set colours here only for consistency
 
@@ -10,64 +36,6 @@ line_col <- "#333333" # Sets colour of x and y-axes
 # Rectangle highlights intervals from 5-10 min and 15-20 min
 rectangle_shading_colour <- "#f6f6f6"
 
-treatment_names_and_colours <- data.frame(
-  treatment = c(
-    "Control",
-    "HNMPA",
-    "PPP",
-    "PPP_and_HNMPA",
-    "Fasting",
-    "Fasting_reduced_glucose",
-    "Rapamycin"
-  ),
-  display_names = c(
-    "Control",
-    "HNMPA",
-    "PPP",
-    "PPP\n&\nHNMPA",
-    "Fasting",
-    "Fasting'",
-    "Rapamycin"
-  ),
-  colours = c(
-    "#6600cc",
-    "#e86c00",
-    "#0093fb",
-    "#411900",
-    "#55b323",
-    "#2c690d",
-    "#e11584"
-  ),
-  pale_colours = c(
-    "#b080e0",
-    "#f58c31",
-    "#8fd0ff",
-    "#a16b4a",
-    "#92d46e",
-    "#6e9659",
-    "#f57dbe"
-  ),
-  very_pale_colours = c(
-    "#d6b8f5",
-    "#ffc38f",
-    "#8fd0ff",
-    "#bf9b84",
-    "#aee691",
-    "#a1b895",
-    "#eba2c9"
-  ),
-  very_dark_colours = c(
-    "#4d0299",
-    "#994700",
-    "#026bb5",
-    "#785138",
-    "#398511",
-    "#1c4506",
-    "#910150"
-  )
-)
-
-
 # Custom fonts may cause issues depending on what fonts you have in your system
 # If it does not work, you could always delete 'family = plot_font_family' in the ggplot theme set below
 plot_font_family <- "Segoe UI"
@@ -75,10 +43,7 @@ plot_light_font_family <- "Segoe UI Light"
 significance_stars_font <- plot_font_family
 
 
-available_sEPSC_parameters <- data.frame(available_parameters = c("amplitude",
-                                                     "raw_amplitude",
-                                                     "frequency",
-                                                     "raw_frequency"))
+available_sEPSC_parameters <- data.frame(available_parameters = c("amplitude", "raw_amplitude", "frequency", "raw_frequency"))
 
 sEPSC_parameters_and_treatments <- expand.grid(
   treatment_names_and_colours$treatment,
@@ -138,8 +103,7 @@ PPR_y_max <- 5
 custom_y_axis_spont_amplitude <- c(70, 120)
 custom_y_axis_spont_frequency <- c(0, 25)
 
-# ----------- Set ggplot theme ----------------------------------------------------------------------------------
-# Formatting changes like increasing font size & removing gray background
+
 # Requires the extrafont() package (loaded in the load-libraries chunk) for custom font
 
 modified_theme_classic <- theme_classic() +
@@ -160,10 +124,8 @@ modified_theme_classic <- theme_classic() +
       size = 12
     ),
     plot.caption.position = "plot",
-    axis.text = element_text(size = 12,
-                             color = "black"),
-    axis.title = element_text(size = 16,
-                              face = "bold"),
+    axis.text = element_text(size = 12, color = "black"),
+    axis.title = element_text(size = 16, face = "bold"),
     axis.title.y = element_text(
       margin = margin(r = 25),
       angle = 90,
@@ -185,8 +147,7 @@ modified_facet_theme <- modified_theme_classic +
     axis.line.x = element_line(color = "gray"),
     axis.line.y = element_line(color = "gray"),
     panel.spacing = unit(2, "lines"),
-    plot.title = element_text(family = plot_light_font_family,
-                              size = 40),
+    plot.title = element_text(family = plot_light_font_family, size = 40),
     plot.subtitle = element_text(
       size = 20,
       hjust = 0.5,
