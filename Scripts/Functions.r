@@ -210,17 +210,66 @@ make_normalized_EPSC_data <- function(filename,
                                       max_time_value = 25,
                                       baseline_length = 5,
                                       interval_length = 5) {
-  raw_df <- read.csv(here(filename), header = TRUE) %>%
-    mutate(across(c(
-      ID, letter, category, treatment, sex, synapses
-    ), as.factor)) %>%
-    filter(time <= max_time_value)
+  
+  list_of_argument_names <- c(filename, current_type)
   
   if (is.null(current_type) ||
       length(current_type) != 1L ||
       !current_type %in% c("eEPSC", "sEPSC")) {
     stop("'current_type' argument must be one of: 'eEPSC' or 'sEPSC'")
   }
+  
+  
+  if (current_type == "eEPSC") {
+    if (any(grepl("sEPSC", list_of_argument_names))) {
+      stop(
+        "current_type = \"",
+        current_type,
+        "\" but some arguments have the text ",
+        "\"sEPSC\".",
+        "\n Are you sure that you selected the correct current type?"
+      )
+    }
+  }
+  
+  if (current_type == "sEPSC") {
+    if (any(grepl("eEPSC", list_of_argument_names))) {
+      stop(
+        "current_type = \"",
+        current_type,
+        "\" but some arguments have the text ",
+        "\"eEPSC\".",
+        "\n Are you sure that you selected the correct current type?"
+      )
+    }
+  }
+  
+  
+  raw_df <- read.csv(here(filename), header = TRUE) %>%
+    rename_with(tolower)
+  
+  if (current_type == "eEPSC") {
+    raw_df <- raw_df %>%
+      rename(
+        ID = id,
+        P1 = p1,
+        P2 = p2,
+        X = x,
+        Y = y
+      )
+  }
+  
+  if (current_type == "sEPSC") {
+    raw_df <- raw_df %>%
+      rename(ID = id, X = x, Y = y)
+  }
+  
+  raw_df <- raw_df %>%
+    mutate(across(c(
+      ID, letter, category, treatment, sex, synapses
+    ), as.factor)) %>%
+    filter(time <= max_time_value)
+  
   
   if (current_type == "eEPSC") {
     raw_df <- raw_df %>%
@@ -671,13 +720,28 @@ make_raw_plots <-
            current_type,
            parameter,
            pruned,
-           hormone_added) {
+           hormone_added,
+           hormone_or_HFS_start_time) {
     list_of_plots <- list()
     
     if (is.null(current_type) ||
         length(current_type) != 1L ||
         !current_type %in% c("eEPSC", "sEPSC")) {
       stop("'current_type' argument must be one of: 'eEPSC' or 'sEPSC'")
+    }
+    
+    if (is.null(hormone_added) ||
+        length(hormone_added) != 1L ||
+        !is.character(hormone_added)) {
+      stop("\"hormone_added\" must be a character. Use \"HFS\" for high-frequency stimulation or \"Insulin\", \"CCK\", etc. for any hormones")
+    }
+    
+    
+    if (is.null(hormone_or_HFS_start_time) ||
+        !is.numeric(hormone_or_HFS_start_time)) {
+      stop(
+        "\"hormone_or_HFS_start_time\" must be numeric (e.g. 5 for HFS or a hormone applied at five minutes into the recording)."
+      )
     }
     
     df <- data %>%
@@ -848,15 +912,15 @@ make_raw_plots <-
       xmax <- layer_scales(list_of_plots[[i]])$x$get_limits()[2]
       ymax2 <- layer_scales(list_of_plots[[i]])$y$get_limits()[2]
       
-      # If plot_category = 2 (an experiment where a hormone was added),
+      # If hormone_added = Insulin, CCK, i.e. anything other than "HFS" (high frequency stimulation),
       # add an annotated line over the application period:
       
-      if (plot_category == 2) {
+      if (hormone_added != "HFS") {
         list_of_plots[[i]] <-
           list_of_plots[[i]] +
           annotate(
             geom = "segment",
-            x = 5,
+            x = hormone_or_HFS_start_time,
             xend = xmax,
             y = ymax + 0.1 * ymax,
             yend = ymax + 0.1 * ymax,
@@ -868,7 +932,7 @@ make_raw_plots <-
           list_of_plots[[i]] +
           annotate(
             geom = "text",
-            x = 5,
+            x = hormone_or_HFS_start_time,
             y = ymax2 + 0.16 * ymax2,
             label = hormone_added,
             size = 4,
@@ -877,18 +941,17 @@ make_raw_plots <-
           )
       }
       
-      # If category = 1 or 3 (experiments involving HFS)
+      # If hormone_added == HFS (experiments involving HFS)
       # add a labelled arrow at 5 minutes:
       
-      if (plot_category == 1 |
-          plot_category == 3) {
+      if (hormone_added == "HFS") {
         list_of_plots[[i]] <-
           list_of_plots[[i]] +
           annotate(
             geom = "segment",
-            x = 5,
+            x = hormone_or_HFS_start_time,
             y = ymax + 0.22 * ymax,
-            xend = 5,
+            xend = hormone_or_HFS_start_time,
             yend = ymax + 0.10 * ymax,
             arrow = arrow(type = "closed", length = unit(0.02, "npc"))
           )
@@ -898,7 +961,7 @@ make_raw_plots <-
           list_of_plots[[i]] +
           annotate(
             geom = "text",
-            x = 5,
+            x = hormone_or_HFS_start_time,
             y = ymax + 0.27 * ymax,
             label = "HFS",
             size = 3.5,
@@ -1139,6 +1202,7 @@ make_summary_plots <- function(plot_category,
                                current_type,
                                parameter,
                                hormone_added,
+                               hormone_or_HFS_start_time,
                                include_representative_trace = "yes",
                                signif_stars = "no",
                                large_axis_text = "no",
@@ -1147,6 +1211,20 @@ make_summary_plots <- function(plot_category,
       length(current_type) != 1L ||
       !current_type %in% c("eEPSC", "sEPSC")) {
     stop("'current_type' argument must be one of: 'eEPSC' or 'sEPSC'")
+  }
+  
+  if (is.null(hormone_added) ||
+      length(hormone_added) != 1L ||
+      !is.character(hormone_added)) {
+    stop("\"hormone_added\" must be a character. Use \"HFS\" for high-frequency stimulation or \"Insulin\", \"CCK\", etc. for any hormones")
+  }
+  
+  
+  if (is.null(hormone_or_HFS_start_time) ||
+      !is.numeric(hormone_or_HFS_start_time)) {
+    stop(
+      "\"hormone_or_HFS_start_time\" must be numeric (e.g. 5 for HFS or a hormone applied at five minutes into the recording)."
+    )
   }
   
   df <-
@@ -1353,15 +1431,15 @@ make_summary_plots <- function(plot_category,
   xmax <-
     layer_scales(treatment_plot)$x$get_limits()[2]
   
-  # If plot_category = 2 (an experiment where a hormone was added),
+  # If hormone_added = Insulin, CCK, i.e. anything other than "HFS" (high frequency stimulation),
   # add an annotated line over the application period:
   
-  if (plot_category == 2) {
+  if (hormone_added != "HFS") {
     treatment_plot <-
       treatment_plot +
       annotate(
         geom = "segment",
-        x = 5,
+        x = hormone_or_HFS_start_time,
         xend = xmax,
         y = ymax,
         yend = ymax,
@@ -1370,7 +1448,7 @@ make_summary_plots <- function(plot_category,
       ) +
       annotate(
         geom = "text",
-        x = 5,
+        x = hormone_or_HFS_start_time,
         y = ymax + 0.06 * ymax,
         label = hormone_added,
         size = if (large_axis_text == "yes") {
@@ -1384,8 +1462,7 @@ make_summary_plots <- function(plot_category,
   }
   
   # If plot_category = 1 or 3 (experiments involving HFS) add an annotation arrow at 5 minutes
-  if (plot_category == 1 |
-      plot_category == 3) {
+  if (hormone_added == "HFS") {
     # Get limits of x- and y-axes
     ymax <- layer_scales(treatment_plot)$y$get_limits()[2]
     xmax <- layer_scales(treatment_plot)$x$get_limits()[2]
@@ -1396,9 +1473,9 @@ make_summary_plots <- function(plot_category,
       treatment_plot +
       annotate(
         geom = "segment",
-        x = 5,
+        x = hormone_or_HFS_start_time,
         y = ymax + 0.22 * ymax,
-        xend = 5,
+        xend = hormone_or_HFS_start_time,
         yend = ymax + 0.10 * ymax,
         arrow = arrow(type = "closed", length = unit(0.02, "npc"))
       )
@@ -1408,7 +1485,7 @@ make_summary_plots <- function(plot_category,
       treatment_plot +
       annotate(
         geom = "text",
-        x = 5,
+        x = hormone_or_HFS_start_time,
         y = ymax + 0.27 * ymax,
         label = "HFS",
         size = 3.5,
@@ -1698,8 +1775,7 @@ make_variance_df <- function(data,
                              include_all_treatments = "yes",
                              list_of_treatments = NULL,
                              baseline_interval,
-                             post_hormone_interval,
-                             hormone_added) {
+                             post_hormone_interval) {
   if (include_all_treatments == "yes") {
     dataframe <- data %>%
       filter(treatment %in% treatment_names_and_colours$treatment) %>%
@@ -1759,7 +1835,7 @@ make_variance_df <- function(data,
     mutate(
       state = case_when(
         interval == baseline_interval ~ "Baseline",
-        interval == post_hormone_interval ~ hormone_added,
+        interval == post_hormone_interval ~ "Post-modification",
         T ~ interval
       )
     ) %>%
@@ -1779,8 +1855,7 @@ make_variance_comparison_plot <- function(data,
                                           large_axis_text = "no",
                                           variance_measure,
                                           baseline_interval,
-                                          post_hormone_interval,
-                                          hormone_added) {
+                                          post_hormone_interval) {
   if (is.null(post_hormone_interval) ||
       !is.character(post_hormone_interval)) {
     stop("'post_hormone_interval' must be a character (e.g. \"t20to25\")")
@@ -1845,7 +1920,7 @@ make_variance_comparison_plot <- function(data,
     geom_point(color = connecting_line_colour_aps, size = 1.8) +
     geom_line(color = connecting_line_colour_aps, linewidth = 0.4) +
     labs(x = NULL) +
-    scale_x_discrete(labels = c("Baseline", hormone_added)) +
+    scale_x_discrete(labels = c("Baseline", "Post-modification")) +
     theme(axis.title.y = element_markdown(family = plot_font_family))
   
   if (variance_measure == "cv") {
@@ -1971,8 +2046,7 @@ make_PPR_before_vs_post_hormone_data <- function(data,
                                                  PPR_min = 0,
                                                  PPR_max = 5,
                                                  baseline_interval,
-                                                 post_hormone_interval,
-                                                 hormone_added) {
+                                                 post_hormone_interval) {
   if (include_all_treatments == "yes") {
     dataframe <- data %>%
       filter(treatment %in% treatment_names_and_colours$treatment) %>%
@@ -2020,7 +2094,7 @@ make_PPR_before_vs_post_hormone_data <- function(data,
     mutate(
       state = case_when(
         interval == baseline_interval ~ "Baseline",
-        interval == post_hormone_interval ~ hormone_added,
+        interval == post_hormone_interval ~ "Post-modification",
         T ~ interval
       )
     ) %>%
@@ -2031,8 +2105,7 @@ make_PPR_before_vs_post_hormone_data <- function(data,
 make_PPR_plot_single_treatment <- function(data,
                                            plot_treatment,
                                            plot_category,
-                                           large_axis_text = "no",
-                                           hormone_added) {
+                                           large_axis_text = "no") {
   plot_colour <- treatment_names_and_colours %>%
     filter(treatment == plot_treatment) %>%
     pull(colours)
@@ -2071,7 +2144,7 @@ make_PPR_plot_single_treatment <- function(data,
     labs(x = NULL, y = "Paired pulse ratio", shape = NULL) +
     scale_shape_manual(values = c(female_shape, male_shape)) +
     geom_signif(
-      comparisons = list(c("Baseline", hormone_added)),
+      comparisons = list(c("Baseline", "Post-modification")),
       test = "t.test",
       test.args = list(paired = TRUE),
       map_signif_level = list_of_significance_stars,
@@ -2110,9 +2183,7 @@ make_PPR_plot_single_treatment <- function(data,
 make_PPR_plot_multiple_treatments <- function(data,
                                               include_all_treatments = "yes",
                                               plot_category,
-                                              list_of_treatments = NULL,
-                                              hormone_added,
-                                              hormone_added_initial) {
+                                              list_of_treatments = NULL) {
   if (include_all_treatments == "yes") {
     treatment_info <- treatment_names_and_colours
     plot_data <- data %>%
@@ -2154,7 +2225,7 @@ make_PPR_plot_multiple_treatments <- function(data,
   PPR_summary_plot <- plot_data %>%
     filter(category == plot_category) %>%
     mutate(
-      state = case_match(state, "Baseline" ~ "B", hormone_added ~ hormone_added_initial),
+      state = case_match(state, "Baseline" ~ "B", "Post-modification" ~ "Post-"),
       treatment = str_replace_all(
         treatment,
         setNames(treatment_info$display_names, treatment_info$treatment)

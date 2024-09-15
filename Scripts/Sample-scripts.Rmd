@@ -57,7 +57,7 @@ add_new_cells(new_raw_data_csv = "____.csv",
 
 
 ```{r read-eEPSC-data, include=F}
-make_normalized_EPSC_data(filename = "Data/Sample-eEPSC-data.csv",
+make_normalized_EPSC_data(filename = "Data/Raw-eEPSC-data-mouse.csv",
                           current_type = "eEPSC",
                           min_time_value = 0,
                           max_time_value = 25,
@@ -122,21 +122,19 @@ make_baseline_comparison_plot(
 # Raw plots
 
 ```{r eEPSC-data-make-individual-raw-plots, eval=F}
-eEPSC_individual_raw_plots <- pmap(
-  .l = treatment_names_and_colours,
-  .f = ~ with(
+eEPSC_individual_raw_plots <- pmap(.l = treatment_names_and_colours, .f = ~ with(
   list(...),
   make_raw_plots(
     data = raw_eEPSC_df,
     plot_treatment = treatment,
-    plot_category = 2,
+    plot_category = 1,
     current_type = "eEPSC",
     parameter = "P1",
     pruned = "no",
-    hormone_added = "Insulin"
+    hormone_added = "HFS",
+    hormone_or_HFS_start_time = 5
   )
-  )
-)
+))
 
 eEPSC_individual_raw_plots
 ```
@@ -154,13 +152,14 @@ sEPSC_individual_raw_plots <- pmap(
     current_type = "sEPSC",
     parameter = "amplitude",
     pruned = "no",
-    hormone_added = "Insulin"
+    hormone_added = "Insulin",
+    hormone_or_HFS_start_time = 5
   )
   )
 )
 
 
-sEPSC_individual_raw_plots[[1]]
+sEPSC_individual_raw_plots
 ```
 
 # Pruned plots
@@ -173,23 +172,23 @@ eEPSC_individual_pruned_plots <- pmap(
   make_raw_plots(
     data = pruned_eEPSC_df_individual_cells,
     plot_treatment = treatment,
-    plot_category = 2,
+    plot_category = 1,
     current_type = "eEPSC",
     parameter = "mean_P1",
     pruned = "yes",
-    hormone_added = "Insulin"
+    hormone_added = "HFS",
+    hormone_or_HFS_start_time = 5
   )
   )
 )
-
-eEPSC_mean_P1_pruned_plots_PPP_category_2
+eEPSC_individual_pruned_plots
 ```
 
 
 
 
 ```{r sEPSC-data-make-individual-pruned-plots, eval=F}
-sEPSC_individual_raw_plots <- pmap(
+sEPSC_individual_pruned_plots <- pmap(
   .l = treatment_names_and_colours,
   .f = ~ with(
   list(...),
@@ -200,12 +199,13 @@ sEPSC_individual_raw_plots <- pmap(
     current_type = "sEPSC",
     parameter = "amplitude",
     pruned = "yes",
-    hormone_added = "Insulin"
+    hormone_added = "Insulin",
+    hormone_or_HFS_start_time = 5
   )
   )
 )
 
-sEPSC_amplitude_pruned_plots_PPP_category_2
+sEPSC_individual_pruned_plots
 ```
 
 # Summary plots
@@ -245,16 +245,17 @@ eEPSC_summary_plots <- pmap(
   .l = treatment_names_and_colours,
   .f = ~ with(
     list(...),
-    make_summary_plots(plot_category = 2,
+    make_summary_plots(plot_category = 1,
                    plot_treatment = treatment,
                    data = pruned_eEPSC_df_all_cells,
                    current_type = "eEPSC",
                    parameter = "amplitude",
                    include_representative_trace = "yes",
-                   signif_stars = "yes",
-                   hormone_added = "Insulin",
+                   signif_stars = "no",
+                   hormone_added = "HFS",
                    large_axis_text = "no",
-                   shade_intervals = "no")
+                   shade_intervals = "no",
+                   hormone_or_HFS_start_time = 4)
   )
 )
 
@@ -276,7 +277,8 @@ sEPSC_summary_plots <- pmap(
                    signif_stars = "yes",
                    hormone_added = "Insulin",
                    large_axis_text = "no",
-                   shade_intervals = "no")
+                   shade_intervals = "no",
+                   hormone_or_HFS_start_time = 5)
   )
 )
 
@@ -286,10 +288,9 @@ sEPSC_summary_plots
 
 ```{r}
 make_variance_df(data = summary_eEPSC_df,
-                 df_category = 2,
+                 df_category = 1,
                  include_all_treatments = "yes",
                  list_of_treatments = NULL,
-                 hormone_added = "Insulin",
                  baseline_interval = "t0to5",
                  post_hormone_interval = "t20to25")
 ```
@@ -315,8 +316,7 @@ make_PPR_before_vs_post_hormone_data(data = raw_eEPSC_df,
                                      PPR_min = 0,
                                      PPR_max = 5,
                                      baseline_interval = "t0to5",
-                                     post_hormone_interval = "t20to25",
-                                     hormone_added = "Insulin")
+                                     post_hormone_interval = "t20to25")
 ```
 
 ```{r message=F, warning=F}
@@ -326,9 +326,8 @@ eEPSC_PPR_plots <- pmap(
     list(...),
     make_PPR_plot_single_treatment(data = PPR_before_vs_post_hormone_data,
                                plot_treatment = treatment,
-                               plot_category = 2,
-                               large_axis_text = "no",
-                               hormone_added = "Insulin")
+                               plot_category = 1,
+                               large_axis_text = "no")
   )
 )
 
@@ -381,25 +380,23 @@ make_PPR_plot_multiple_treatments(data = PPR_before_vs_post_hormone_data,
 eEPSC_cv_plots <- pmap(.l = treatment_names_and_colours, .f = ~ with(
   list(...),
   make_variance_comparison_plot(data = variance_df,
-                              plot_category = 2,
+                              plot_category = 1,
                               plot_treatment = treatment,
                               large_axis_text = "no",
                               variance_measure = "cv",
                               baseline_interval = "t0to5",
-                              post_hormone_interval = "t20to25",
-                              hormone_added = "Insulin")
+                              post_hormone_interval = "t20to25")
 ))
 
 eEPSC_VMR_plots <- pmap(.l = treatment_names_and_colours, .f = ~ with(
   list(...),
   make_variance_comparison_plot(data = variance_df,
-                              plot_category = 2,
+                              plot_category = 1,
                               plot_treatment = treatment,
                               large_axis_text = "no",
                               variance_measure = "VMR",
                               baseline_interval = "t0to5",
-                              post_hormone_interval = "t20to25",
-                              hormone_added = "Insulin")
+                              post_hormone_interval = "t20to25")
 ))
 
 eEPSC_cv_plots
