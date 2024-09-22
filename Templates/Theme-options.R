@@ -1,52 +1,52 @@
 # Theme Options
 
 
-treatment_names_and_colours <- data.frame(
-  treatment = c(
-    "WT",
-    "Cre"
-  ),
-  display_names = c(
-    "WT",
-    "Cre"
-  ),
-  colours = c(
-    "#6600cc",
-    "#e86c00"
-  ),
-  very_pale_colours = c(
-    "#d6b8f5",
-    "#ffc38f"
-  )
-)
-
-
 # treatment_names_and_colours <- data.frame(
 #   treatment = c(
-#     "Control",
-#     "HNMPA",
-#     "PPP",
-#     "PPP_and_HNMPA"
+#     "WT",
+#     "Cre"
 #   ),
 #   display_names = c(
-#     "Control",
-#     "HNMPA",
-#     "PPP",
-#     "PPP\n&\nHNMPA"
+#     "WT",
+#     "Cre"
 #   ),
 #   colours = c(
 #     "#6600cc",
-#     "#e86c00",
-#     "#0093fb",
-#     "#411900"
+#     "#e86c00"
 #   ),
 #   very_pale_colours = c(
 #     "#d6b8f5",
-#     "#ffc38f",
-#     "#8fd0ff",
-#     "#bf9b84"
+#     "#ffc38f"
 #   )
 # )
+
+
+treatment_names_and_colours <- data.frame(
+  treatment = c(
+    "Control",
+    "HNMPA",
+    "PPP",
+    "PPP_and_HNMPA"
+  ),
+  display_names = c(
+    "Control",
+    "HNMPA",
+    "PPP",
+    "PPP\n&\nHNMPA"
+  ),
+  colours = c(
+    "#6600cc",
+    "#e86c00",
+    "#0093fb",
+    "#411900"
+  ),
+  very_pale_colours = c(
+    "#d6b8f5",
+    "#ffc38f",
+    "#8fd0ff",
+    "#bf9b84"
+  )
+)
 
 
 # Set colours here only for consistency

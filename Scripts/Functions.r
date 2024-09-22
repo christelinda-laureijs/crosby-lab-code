@@ -2105,7 +2105,9 @@ make_PPR_before_vs_post_hormone_data <- function(data,
 make_PPR_plot_single_treatment <- function(data,
                                            plot_treatment,
                                            plot_category,
-                                           large_axis_text = "no") {
+                                           large_axis_text = "no",
+                                           baseline_label,
+                                           post_modification_label) {
   plot_colour <- treatment_names_and_colours %>%
     filter(treatment == plot_treatment) %>%
     pull(colours)
@@ -2114,6 +2116,9 @@ make_PPR_plot_single_treatment <- function(data,
   PPR_single_plot <- data %>%
     filter(treatment == plot_treatment) %>%
     filter(category == plot_category) %>%
+    mutate(state = case_match(state,
+                              "Baseline" ~ baseline_label,
+                              "Post-modification" ~ post_modification_label)) %>% 
     group_by(treatment, state, letter, sex) %>%
     summarise(mean_PPR_cell = mean(PPR), .groups = "drop") %>%
     ggplot(aes(x = state, y = mean_PPR_cell, shape = sex)) +
@@ -2144,7 +2149,7 @@ make_PPR_plot_single_treatment <- function(data,
     labs(x = NULL, y = "Paired pulse ratio", shape = NULL) +
     scale_shape_manual(values = c(female_shape, male_shape)) +
     geom_signif(
-      comparisons = list(c("Baseline", "Post-modification")),
+      comparisons = list(c(baseline_label, post_modification_label)),
       test = "t.test",
       test.args = list(paired = TRUE),
       map_signif_level = list_of_significance_stars,
@@ -2154,7 +2159,7 @@ make_PPR_plot_single_treatment <- function(data,
       size = 0.4,
       y_position = 2.5
     )
-  
+
   if (large_axis_text == "yes") {
     PPR_single_plot <- PPR_single_plot +
       theme(
@@ -2164,8 +2169,8 @@ make_PPR_plot_single_treatment <- function(data,
         legend.key.spacing.y = unit(0.5, "cm")
       )
   }
-  
-  
+
+
   if (save_plot_pngs == "yes") {
     ggsave(
       plot = PPR_single_plot,
@@ -2183,7 +2188,9 @@ make_PPR_plot_single_treatment <- function(data,
 make_PPR_plot_multiple_treatments <- function(data,
                                               include_all_treatments = "yes",
                                               plot_category,
-                                              list_of_treatments = NULL) {
+                                              list_of_treatments = NULL,
+                                              baseline_label,
+                                              post_modification_label) {
   if (include_all_treatments == "yes") {
     treatment_info <- treatment_names_and_colours
     plot_data <- data %>%
@@ -2225,7 +2232,7 @@ make_PPR_plot_multiple_treatments <- function(data,
   PPR_summary_plot <- plot_data %>%
     filter(category == plot_category) %>%
     mutate(
-      state = case_match(state, "Baseline" ~ "B", "Post-modification" ~ "Post-"),
+      state = case_match(state, "Baseline" ~ baseline_label, "Post-modification" ~ post_modification_label),
       treatment = str_replace_all(
         treatment,
         setNames(treatment_info$display_names, treatment_info$treatment)
@@ -2246,7 +2253,7 @@ make_PPR_plot_multiple_treatments <- function(data,
               linewidth = connecting_line_width_PPR,
               alpha = 0.3) +
     geom_signif(
-      comparisons = list(c("B", "I")),
+      comparisons = list(c(baseline_label, post_modification_label)),
       test = "t.test",
       test.args = list(paired = TRUE),
       map_signif_level = list_of_significance_stars,
