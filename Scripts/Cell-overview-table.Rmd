@@ -1,0 +1,27 @@
+---
+title: "Cell Overview Table"
+output: html_document
+date: "2024-10-06"
+---
+
+```{r}
+library(knitr)
+library(kableExtra)
+library(here)
+```
+
+
+```{r}
+characteristics <- read.csv(here("Data/Sample-cell-characteristics.csv"), header=T)
+
+```
+
+
+
+
+```{r}
+characteristics %>% 
+  kable()
+  
+```
+

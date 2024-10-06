@@ -159,7 +159,7 @@ sEPSC_individual_raw_plots <- pmap(
 )
 
 
-sEPSC_individual_raw_plots
+#sEPSC_individual_raw_plots[1]
 ```
 
 # Pruned plots
@@ -172,11 +172,11 @@ eEPSC_individual_pruned_plots <- pmap(
   make_raw_plots(
     data = pruned_eEPSC_df_individual_cells,
     plot_treatment = treatment,
-    plot_category = 1,
+    plot_category = 2,
     current_type = "eEPSC",
     parameter = "mean_P1",
     pruned = "yes",
-    hormone_added = "HFS",
+    hormone_added = "Insulin",
     hormone_or_HFS_start_time = 5
   )
   )
@@ -245,14 +245,14 @@ eEPSC_summary_plots <- pmap(
   .l = treatment_names_and_colours,
   .f = ~ with(
     list(...),
-    make_summary_plots(plot_category = 1,
+    make_summary_plots(plot_category = 2,
                    plot_treatment = treatment,
                    data = pruned_eEPSC_df_all_cells,
                    current_type = "eEPSC",
                    parameter = "amplitude",
                    include_representative_trace = "yes",
                    signif_stars = "no",
-                   hormone_added = "HFS",
+                   hormone_added = "Insulin",
                    large_axis_text = "no",
                    shade_intervals = "no",
                    hormone_or_HFS_start_time = 4)
@@ -288,7 +288,7 @@ sEPSC_summary_plots
 
 ```{r}
 make_variance_df(data = summary_eEPSC_df,
-                 df_category = 1,
+                 df_category = 2,
                  include_all_treatments = "yes",
                  list_of_treatments = NULL,
                  baseline_interval = "t0to5",
@@ -382,7 +382,7 @@ make_PPR_plot_multiple_treatments(data = PPR_before_vs_post_hormone_data,
 eEPSC_cv_plots <- pmap(.l = treatment_names_and_colours, .f = ~ with(
   list(...),
   make_variance_comparison_plot(data = variance_df,
-                              plot_category = 1,
+                              plot_category = 2,
                               plot_treatment = treatment,
                               large_axis_text = "no",
                               variance_measure = "cv",
@@ -393,7 +393,7 @@ eEPSC_cv_plots <- pmap(.l = treatment_names_and_colours, .f = ~ with(
 eEPSC_VMR_plots <- pmap(.l = treatment_names_and_colours, .f = ~ with(
   list(...),
   make_variance_comparison_plot(data = variance_df,
-                              plot_category = 1,
+                              plot_category = 2,
                               plot_treatment = treatment,
                               large_axis_text = "no",
                               variance_measure = "VMR",
@@ -466,3 +466,7 @@ pmap(
   )
 )
 ```
+
+
+
+
