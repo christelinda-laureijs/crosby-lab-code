@@ -1,27 +1,128 @@
 ---
 title: "Cell Overview Table"
-output: html_document
-date: "2024-10-06"
+output:
+  html_document:
+    css: "../Templates/my-CSS-theme.css"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE,
+                      message=FALSE,
+                      warning=FALSE)
+
+```
 
 ```{r}
 library(knitr)
 library(kableExtra)
 library(here)
+library(dplyr)
+library(reactable)
+library(htmltools)
+library(stringr)
 ```
 
+# Number of cells
 
 ```{r}
-characteristics <- read.csv(here("Data/Sample-cell-characteristics.csv"), header=T)
+characteristics <- read.csv(here("Data/Sample-cell-characteristics.csv"), header=T) %>% 
+  rename_with(str_to_title)
 
 ```
 
+```{r}
+characteristics %>%
+  group_by(Treatment, Sex, Category) %>%
+  summarize('Number of cells' = n()) %>%
+  reactable(
+    columns = list('Number of cells' = colDef(
+      style = function(value) {
+        if (value < 7) {
+          color <- "#950606"
+        } else {
+          color <- "#000000"
+        }
+        list(color = color, fontWeight = "bold")
+      }
+    )),
+    highlight = TRUE
+  )
+```
 
 
+# Cell Information
+
+```{r}
+characteristics %>%
+  rename_with(str_to_title) %>%
+  reactable(
+    filterable = TRUE,
+    columns = list(
+      Letter = colDef(
+        sticky = "left",
+        style = list(borderRight = "1px solid #eee"),
+        headerStyle = list(borderRight = "1px solid #eee")
+      ),
+      Sex = colDef(
+        filterable = TRUE,
+        filterMethod = JS(
+          "function(rows, columnId, filterValue) {
+        return rows.filter(function(row) {
+          return String(row.values[columnId]) === filterValue
+        })
+      }"
+        )
+      )
+    ),
+    showPageSizeOptions = TRUE
+  )
+
+
+knitr::knit_exit()
+```
 
 ```{r}
 characteristics %>% 
-  kable()
+  mutate(
+    image = sprintf("%s.png", letter)
+  )
+```
+
+
+
+```{r}
+characteristics %>%
+  rename_with(str_to_title) %>%
   
+  reactable(columns = list(
+    Sex = colDef(filterable = TRUE),
+    filterMethod = JS(
+      "function(rows, columnId, filterValue ) {
+                                           return rows.filter(function(row) {
+                                           return String(row.values[columnId]) === filterValue
+                                           })
+                                           }"
+    )
+  ),
+  searchable = TRUE)
+```
+
+
+```{r}
+knitr::knit_exit()
+```
+
+
+```{r}
+characteristics$image = include_graphics(here(
+    paste0(
+      "Figures/Evoked-currents/Output-individual-plots/",
+      characteristics$letter,
+      ".png"
+    )
+  ))
+characteristics %>% 
+  kable()
 ```
 

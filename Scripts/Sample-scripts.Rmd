@@ -1,6 +1,10 @@
 ---
 title: Sample scripts
 author: "Christelinda Laureijs"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    css: "../Templates/my-CSS-theme.css"
 ---
 
 ```{r set-global-options, echo=FALSE}
@@ -72,6 +76,38 @@ make_pruned_EPSC_data(data = raw_eEPSC_df,
                       interval_length = 1)
 make_summary_EPSC_data(data = raw_eEPSC_df, current_type = "eEPSC")
 ```
+
+```{r}
+library(reactable)
+library(reactablefmtr)
+```
+
+
+```{r, warning=FALSE}
+table_data <- raw_eEPSC_df %>% 
+  group_by(letter, synapses, sex, treatment, X, Y, age, animal, category, cell) %>% 
+  summarize(P1_transformed_list = list(P1_transformed)) %>% 
+merge(., treatment_names_and_colours, by = "treatment") %>% select(c(letter, display_names, synapses, sex, X, Y, age, animal, category, cell, P1_transformed_list, colours)) %>% 
+  rename_with(str_to_title)
+
+reactable(data = table_data,
+          columns = list(
+            Display_names = colDef(name = "Treatment"),
+            Colours = colDef(show = FALSE),
+    P1_transformed_list = colDef(name = "P1 transformed",
+      cell = react_sparkline(table_data,
+                             line_color_ref = "Colours",
+                             show_area = TRUE,
+                             area_opacity = 1)
+  )))
+
+knitr::knit_exit()
+```
+
+
+
+
+
 
 ```{r read-sEPSC-data}
 make_normalized_EPSC_data(filename = "Data/Sample-sEPSC-data.csv",
