@@ -95,6 +95,211 @@ make_summary_EPSC_data(data = pruned_sEPSC_df_individual_cells,
                        current_type = "sEPSC")
 ```
 
+# percent change after 20 min
+
+```{r}
+summary_eEPSC_df
+```
+
+
+
+```{r}
+# ---------------- Cell Locations: Modify dataset for cell locations plot ------------------------------------------------------------------
+# Filter out cells with missing coordinates
+# Add a new column called percent change that looks at the percent change 20 minutes after adding insulin
+# Filter (for now) to only include full datasets for the experiments where I added insulin (Category == 2)
+
+make_percent_change_df <- function(data,
+                                   current_type,
+                                   baseline_interval,
+                                   comparison_interval) {
+  if (current_type == "eEPSC") {
+    percent_change_df <-
+      summary_eEPSC_df %>%
+      group_by(letter, treatment, interval) %>%
+      select(!c(
+        mean_P1_raw,
+        n,
+        sd,
+        cv,
+        se,
+        cv_inverse_square,
+        variance,
+        VMR,
+        time
+      )) %>%
+      pivot_wider(names_from = interval, values_from = mean_P1_transformed) %>%
+      mutate(percent_change = get(comparison_interval) / get(baseline_interval) *
+               100) %>%
+      ungroup() %>%
+      group_by(synapses) %>%
+      mutate(n_cells_per_synapse = n())
+  }
+  
+  # Get the value of the maximum percent change after 20 minutes
+# I filtered this to only include the treatments of interest
+# This is required to set the scale in the cell locations plot.
+# plyr::round_any rounds this value up to the nearest multiple of 10
+# Required to create 'nice' scale limits
+max_percent_change <- percent_change_df %>%
+  ungroup() %>%
+  summarise(
+    max(percent_change)) %>%
+  pull() %>%
+  plyr::round_any(10, ceiling)
+
+  assign(paste0("percent_change_", current_type, "_df"), percent_change_df, envir = .GlobalEnv)
+  assign(paste0("max_percent_change_", current_type), max_percent_change, envir = .GlobalEnv)
+  percent_change_df
+}
+
+background_slice_image <- jpeg::readJPEG(here("Figures/Cell-coordinates-plot/DMH-Image.jpg"))
+```
+
+# TODO: add tests for data name eEPSC but current_type == sEPSC
+# TODO Cell coordinates plot add current_type option
+# TODO: Add option for include_legend =
+# TODO: include option for axis lines, no
+```{r}
+make_percent_change_df(data = summary_eEPSC_df,
+                       current_type = "eEPSC",
+                       baseline_interval = 't0to5',
+                       comparison_interval = 't20to25')
+```
+
+
+```{r}
+cell_coordinates_plot <- percent_change_eEPSC_df %>% 
+  filter(category == 2) %>% 
+  filter_at(vars(X, Y), all_vars(!is.na(.))) %>% 
+  filter(!is.na(percent_change)) %>% 
+  ggplot(aes(x = X, y = Y, color = percent_change)) +
+  annotation_custom(
+    rasterGrob(background_slice_image,
+      width = unit(1, "npc"),
+      height = unit(1, "npc")
+    ),
+    -Inf, 
+    Inf,
+    -Inf,
+    Inf
+  ) +
+  labs(y = "y (µm)", x = "x (µm)", color = "% Change in\ncurrent amplitude\nafter 20 min\nof insulin exposure") +
+  geom_point(size = 2.7,
+             alpha = .99,
+             shape = 16) +
+  scale_color_viridis_c(
+    limits = c(0, max_percent_change_eEPSC),
+    begin = 0.27,
+    end = 1,
+    option = "plasma"
+  ) +
+  coord_fixed(ratio = 1) +
+  xlim(0, 800) +
+  scale_y_reverse(limits = c(800, 0)) +
+  theme(
+    plot.margin = margin(25, 0.5, 0.5, 15),
+    axis.title.y = element_text(angle = 90, margin = margin(r = 17)),
+    legend.title = element_text(size = 14, margin = margin(b = 15))
+  ) +
+  guides(color = guide_colorbar(draw.ulim = T, draw.llim = F, theme = theme(
+    legend.key.width = unit(0.7, "lines"),
+    legend.key.height = unit(10, "lines")
+  )))
+
+
+cell_coordinates_plot
+```
+
+
+```{r, dev='CairoPNG'}
+cell_coordinates_plot_poster <-
+  ggplot(percent_change_eEPSC_df, aes(x = X, y = Y, color = percent_change, shape = category)) +
+  annotation_custom(
+    rasterGrob(background_slice_image,
+      width = unit(1, "npc"),
+      height = unit(1, "npc")
+    ),
+    -Inf, 
+    Inf,
+    -Inf,
+    Inf
+  ) +
+  labs(color = "Change in evoked\ncurrent amplitude\n(% baseline)\nafter 20 min\nof insulin exposure",
+       shape = "Synapses",
+       x = NULL,
+       y = NULL) +
+  geom_point(size = 2.4,
+             alpha = 1) * (blend("lighten") + blend("multiply", alpha = 0.6)) +
+  scale_color_viridis_c(
+    limits = c(0, max_percent_change_eEPSC),
+    begin = 0.27,
+    end = 1,
+    option = "plasma"
+  ) +
+  scale_shape_manual(values = c(17, 16), labels = c(
+    paste0("GABA, n = ", percent_change_eEPSC_df$n_cells_per_synapse[percent_change_eEPSC_df$synapse == "GABA"][1]),
+    paste0("Glutamate, n = ", percent_change_eEPSC_df$n_cells_per_synapse[percent_change_eEPSC_df$synapse == "Glutamate"][1])))+
+  coord_fixed(ratio = 1) +
+  xlim(0, 800) +
+  scale_y_reverse(limits = c(800, 0)) +
+  theme(
+    plot.margin = margin(5, 0.5, 0.5, 5),
+    axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.line = element_blank(),
+    legend.title = element_text(size = 12, margin = margin(b = 15))
+  ) +
+  annotate(
+    geom = "segment",
+    x = 600,
+    xend = 800,
+    y = 200,
+    yend = 200,
+    linewidth = 1,
+    color = "white",
+    lineend = "square"
+  ) +
+  annotate(
+    geom = "segment",
+    x = 600,
+    xend = 600,
+    y = 200,
+    yend = 0,
+    linewidth = 1,
+    color = "white",
+    lineend = "square"
+  ) +
+  annotate(
+    geom = "text",
+    x = 700,
+    y = 240,
+    label = "20 µm",
+    size = 4,
+    hjust = 0.5,
+    family = plot_font_family,
+    color = "white"
+  ) +
+  annotate(
+    geom = "text",
+    x = 570,
+    y = 100,
+    label = "20 µm",
+    size = 4,
+    vjust = 0,
+    hjust = 0.5,
+    family = plot_font_family,
+    color = "white",
+    angle = 90
+  ) +
+  guides(color = guide_colorbar(draw.ulim = T, draw.llim = F, theme = theme(
+    legend.key.width = unit(0.7, "lines"),
+    legend.key.height = unit(10, "lines")
+  )))
+
+cell_coordinates_plot_poster
+```
+
 # Baseline comparisons plots
 
 ```{r baseline-comparisons-plot}

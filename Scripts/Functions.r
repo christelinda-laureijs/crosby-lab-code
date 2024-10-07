@@ -514,7 +514,8 @@ make_summary_EPSC_data <- function(data, current_type) {
         animal = unique(animal),
         X = unique(X),
         Y = unique(Y),
-        time = last(time)
+        time = last(time),
+        synapses = unique(synapses)
       ) %>%
       ungroup()
   }
@@ -535,7 +536,8 @@ make_summary_EPSC_data <- function(data, current_type) {
         mean_raw_frequency = mean(frequency, na.rm = TRUE),
         time = last(time),
         interval = unique(interval),
-        category = unique(category)
+        category = unique(category),
+        synapses = unique(synapses)
       )
   }
   assign(paste0("summary_", current_type, "_df"), summary_df, envir = .GlobalEnv)
