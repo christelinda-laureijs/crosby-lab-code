@@ -9,6 +9,9 @@ suppressPackageStartupMessages({
   library(stringr) # Manipulating text objects
   library(glue) # Required for easy mixing of variables and text when naming objects
   library(purrr) # Required to map over lists and reduce repetitive code
+  library(reactable) # Required for display tables
+  library(htmltools) # Required for reactable
+  library(reactablefmtr) # required for sparklines; also requires dataui to be installed
   # Plotting
   
   library(ggplot2) # Make plots
