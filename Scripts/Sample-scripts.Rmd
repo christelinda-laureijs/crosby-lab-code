@@ -106,7 +106,7 @@ make_baseline_comparison_plot(
   current_type = "eEPSC",
   parameter = "raw_amplitude",
   baseline_interval = "t0to5",
-  large_axis_text = "no",
+  large_axis_text = "yes",
   plot_width = 8
 )
 ```
@@ -254,7 +254,7 @@ eEPSC_summary_plots <- pmap(
                    current_type = "eEPSC",
                    parameter = "amplitude",
                    include_representative_trace = "yes",
-                   signif_stars = "no",
+                   signif_stars = "yes",
                    hormone_added = "Insulin",
                    large_axis_text = "no",
                    shade_intervals = "no",

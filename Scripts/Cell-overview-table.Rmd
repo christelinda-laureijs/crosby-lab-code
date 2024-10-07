@@ -28,7 +28,7 @@ save_RDS_files <- "no"
 
 ```{css}
 div.main-container {
-  max-width: 1300px !important;
+  max-width: 1400px !important;
 }
 
 ```
@@ -36,8 +36,14 @@ div.main-container {
 # Number of cells
 
 ```{r cell-count-table}
-cell_characteristics <- read.csv(here("Data/sample-cell-characteristics.csv"))
+cell_characteristics <- read.csv(here("Data/sample-cell-characteristics.csv")) %>% 
+  mutate(
+    R_a = lapply(str_split(R_a, pattern = ", "), FUN = as.numeric)
+  )
+```
 
+
+```{r}
 cell_characteristics %>%
   rename_with(str_to_title) %>% 
   group_by(Treatment, Sex, Category) %>%
@@ -56,10 +62,6 @@ cell_characteristics %>%
     highlight = TRUE
   )
 ```
-
-
-
-
 
 # Cell Information
 
@@ -102,6 +104,7 @@ raw_sEPSC_df_for_table <- pruned_sEPSC_df_individual_cells %>%
 ```
 
 
+
 ```{r merge-dataframes-for-table}
 # Merge dataframes for table
 table_data <-
@@ -116,6 +119,7 @@ table_data <-
       sex,
       P1_transformed,
       amplitude_transformed,
+      R_a,
       X,
       Y,
       age,
@@ -132,7 +136,7 @@ table_data <-
   mutate(across(c(X, Y), round, -1))
 ```
 
-```{r make-master-table}
+```{r make-master-table, escape = F}
 reactable(
   data = table_data,
   defaultSorted = c("Category", "Treatment", "Animal"),
@@ -178,6 +182,16 @@ reactable(
         line_color_ref = "Colours",
         show_area = TRUE,
         area_opacity = 1
+      )
+    ),
+    R_a = colDef(
+      name = "Ra (MΩ)",
+      filterable = FALSE,
+      cell = react_sparkline(
+        table_data,
+        line_color_ref = "Colours",
+        labels = c("first", "last"),
+        decimals = 1
       )
     )
   )
