@@ -1,5 +1,5 @@
 ---
-title: "Cell Overview Table"
+title: "Cell Summary Tables"
 output:
   html_document:
     css: "../Templates/my-CSS-theme.css"
@@ -25,16 +25,21 @@ source(here("Templates/Theme-options.R"), local = knitr::knit_global())
 save_RDS_files <- "no"
 ```
 
-# Number of cells
 
-```{r}
-characteristics <- read.csv(here("Data/Sample-cell-characteristics.csv"), header=T) %>% 
-  rename_with(str_to_title)
+```{css}
+div.main-container {
+  max-width: 1300px !important;
+}
 
 ```
 
-```{r}
-characteristics %>%
+# Number of cells
+
+```{r cell-count-table}
+cell_characteristics <- read.csv(here("Data/sample-cell-characteristics.csv"))
+
+cell_characteristics %>%
+  rename_with(str_to_title) %>% 
   group_by(Treatment, Sex, Category) %>%
   summarize('Number of cells' = n()) %>%
   reactable(
@@ -53,36 +58,13 @@ characteristics %>%
 ```
 
 
+
+
+
 # Cell Information
 
-```{r}
-characteristics %>%
-  rename_with(str_to_title) %>%
-  reactable(
-    filterable = TRUE,
-    columns = list(
-      Letter = colDef(
-        sticky = "left",
-        style = list(borderRight = "1px solid #eee"),
-        headerStyle = list(borderRight = "1px solid #eee")
-      ),
-      Sex = colDef(
-        filterable = TRUE,
-        filterMethod = JS(
-          "function(rows, columnId, filterValue) {
-        return rows.filter(function(row) {
-          return String(row.values[columnId]) === filterValue
-        })
-      }"
-        )
-      )
-    ),
-    showPageSizeOptions = TRUE
-  )
-```
-
-
-```{r}
+```{r import-current-data}
+# Import and process evoked current data
 make_normalized_EPSC_data(filename = "Data/Sample-eEPSC-data.csv",
                           current_type = "eEPSC",
                           min_time_value = 0,
@@ -100,6 +82,7 @@ raw_eEPSC_df_for_table <- pruned_eEPSC_df_individual_cells %>%
   group_by(letter) %>% 
   summarize(P1_transformed = list(mean_P1))
 
+# Import and process spontaneous current data
 make_normalized_EPSC_data(filename = "Data/Sample-sEPSC-data.csv",
                           current_type = "sEPSC",
                           min_time_value = 0,
@@ -116,19 +99,19 @@ make_pruned_EPSC_data(data = raw_sEPSC_df,
 raw_sEPSC_df_for_table <- pruned_sEPSC_df_individual_cells %>% 
   group_by(letter) %>% 
   summarize(amplitude_transformed = list(mean_amplitude))
+```
 
-cell_characteristics <- read.csv(here("Data/sample-cell-characteristics.csv"))
+
+```{r merge-dataframes-for-table}
+# Merge dataframes for table
 table_data <-
   merge(raw_eEPSC_df_for_table, raw_sEPSC_df_for_table, by = "letter") %>%
   merge(., cell_characteristics, by = "letter") %>%
   merge(., treatment_names_and_colours, by = "treatment") %>%
-  rename(
-    treatment = display_names
-  ) %>% 
   select(
     c(
       letter,
-      treatment,
+      display_names,
       synapses,
       sex,
       P1_transformed,
@@ -142,13 +125,14 @@ table_data <-
       colours
     )
   ) %>%
+  rename(
+    treatment = display_names
+  ) %>% 
   rename_with(str_to_title) %>% 
   mutate(across(c(X, Y), round, -1))
-
-
 ```
 
-```{r}
+```{r make-master-table}
 reactable(
   data = table_data,
   defaultSorted = c("Category", "Treatment", "Animal"),
@@ -198,8 +182,6 @@ reactable(
     )
   )
 )
-
-knitr::knit_exit()
 ```
 
 
