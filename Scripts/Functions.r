@@ -369,7 +369,8 @@ make_pruned_EPSC_data <- function(data,
         letter = unique(letter),
         category = unique(category),
         time = last(time),
-        baseline_mean = unique(baseline_mean)
+        baseline_mean = unique(baseline_mean),
+        synapses = unique(synapses)
       )
   }
   
@@ -387,6 +388,7 @@ make_pruned_EPSC_data <- function(data,
         letter = unique(letter),
         category = unique(category),
         interval = unique(interval),
+        synapses = unique(synapses),
         time = last(time) # Time value at the end of the interval; used for plots
       ) %>%
       group_by(letter) %>%
@@ -444,7 +446,8 @@ make_pruned_EPSC_data <- function(data,
         se_P1_all_cells = sd_P1_all_cells / sqrt(n),
         cv_P1_all_cells = sd_P1_all_cells / mean_P1_all_cells * 100,
         time = last(time),
-        category = unique(category)
+        category = unique(category),
+        
       )
   }
   
@@ -537,7 +540,7 @@ make_summary_EPSC_data <- function(data, current_type) {
         time = last(time),
         interval = unique(interval),
         category = unique(category),
-        synapses = unique(synapses)
+        synapses = last(synapses)
       )
   }
   assign(paste0("summary_", current_type, "_df"), summary_df, envir = .GlobalEnv)
