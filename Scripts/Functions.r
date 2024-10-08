@@ -372,6 +372,10 @@ make_pruned_EPSC_data <- function(data,
         baseline_mean = unique(baseline_mean),
         synapses = unique(synapses)
       )
+    
+    pruned_df_for_table <- pruned_df_individual_cells %>%
+      group_by(letter) %>% 
+      summarize(P1_transformed = list(mean_P1))
   }
   
   if (current_type == "sEPSC") {
@@ -398,11 +402,21 @@ make_pruned_EPSC_data <- function(data,
         baseline_mean_frequency = sum(frequency * baseline_range) / sum(baseline_range),
         frequency_transformed = (frequency / baseline_mean_frequency) * 100
       )
+    
+    pruned_df_for_table <- pruned_df_individual_cells %>% 
+      group_by(letter) %>% 
+      summarize(spont_amplitude_transformed = list(mean_amplitude))
   }
   
   assign(
     paste0("pruned_", current_type, "_df_individual_cells"),
     pruned_df_individual_cells,
+    envir = .GlobalEnv
+  )
+  
+  assign(
+    paste0("pruned_", current_type, "_df_for_table"),
+    pruned_df_for_table,
     envir = .GlobalEnv
   )
   

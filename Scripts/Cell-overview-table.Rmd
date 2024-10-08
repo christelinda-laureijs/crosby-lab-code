@@ -33,12 +33,44 @@ div.main-container {
 
 ```
 
+```{r}
+# Import and process evoked current data
+make_normalized_EPSC_data(filename = "Data/Sample-eEPSC-data.csv",
+                          current_type = "eEPSC",
+                          min_time_value = 0,
+                          max_time_value = 25,
+                          interval_length = 5,
+                          baseline_length = 5)
+make_pruned_EPSC_data(data = raw_eEPSC_df,
+                      current_type = "eEPSC",
+                      min_time_value = 0,
+                      max_time_value = 25,
+                      baseline_length = 5,
+                      interval_length = 1)
+
+make_normalized_EPSC_data(filename = "Data/Sample-sEPSC-data.csv",
+                          current_type = "sEPSC",
+                          min_time_value = 0,
+                          max_time_value = 25,
+                          interval_length = 5,
+                          baseline_length = 5)
+make_pruned_EPSC_data(data = raw_sEPSC_df,
+                      current_type = "sEPSC",
+                      min_time_value = 0,
+                      max_time_value = 25,
+                      baseline_length = 5,
+                      interval_length = 1)
+```
+
+
 # Number of cells
 
 ```{r cell-count-table}
 cell_characteristics <- read.csv(here("Data/sample-cell-characteristics.csv")) %>% 
   mutate(
-    R_a = lapply(str_split(R_a, pattern = ", "), FUN = as.numeric)
+    R_a = lapply(str_split(R_a, pattern = ", "), FUN = as.numeric),
+    R_a = lapply(R_a, FUN = replace_na, replace = 0),
+    letter = factor(letter)
   )
 ```
 
@@ -65,56 +97,22 @@ cell_characteristics %>%
 
 # Cell Information
 
-```{r import-current-data}
-# Import and process evoked current data
-make_normalized_EPSC_data(filename = "Data/Sample-eEPSC-data.csv",
-                          current_type = "eEPSC",
-                          min_time_value = 0,
-                          max_time_value = 25,
-                          interval_length = 5,
-                          baseline_length = 5)
-make_pruned_EPSC_data(data = raw_eEPSC_df,
-                      current_type = "eEPSC",
-                      min_time_value = 0,
-                      max_time_value = 25,
-                      baseline_length = 5,
-                      interval_length = 1)
 
-raw_eEPSC_df_for_table <- pruned_eEPSC_df_individual_cells %>%
-  group_by(letter) %>% 
-  summarize(P1_transformed = list(mean_P1))
+```{r functions-dataframes-for-table}
 
-# Import and process spontaneous current data
-make_normalized_EPSC_data(filename = "Data/Sample-sEPSC-data.csv",
-                          current_type = "sEPSC",
-                          min_time_value = 0,
-                          max_time_value = 25,
-                          interval_length = 5,
-                          baseline_length = 5)
-make_pruned_EPSC_data(data = raw_sEPSC_df,
-                      current_type = "sEPSC",
-                      min_time_value = 0,
-                      max_time_value = 25,
-                      baseline_length = 5,
-                      interval_length = 1)
-
-raw_sEPSC_df_for_table <- pruned_sEPSC_df_individual_cells %>% 
-  group_by(letter) %>% 
-  summarize(spont_amplitude_transformed = list(mean_amplitude))
-```
-
-
-
-```{r merge-dataframes-for-table}
-# Merge dataframes for table
+make_cell_summary_df <- function(include_all_treatments = "yes",
+                                    list_of_treatments = NULL) {
 table_data <-
-  merge(raw_eEPSC_df_for_table, raw_sEPSC_df_for_table, by = "letter") %>%
+  merge(pruned_eEPSC_df_for_table,
+        pruned_sEPSC_df_for_table,
+        by = "letter") %>%
   merge(., cell_characteristics, by = "letter") %>%
   merge(., treatment_names_and_colours, by = "treatment") %>%
   select(
     c(
       letter,
       display_names,
+      treatment,
       synapses,
       sex,
       P1_transformed,
@@ -129,37 +127,51 @@ table_data <-
       colours
     )
   ) %>%
-  rename(
-    treatment = display_names
-  ) %>% 
   rename_with(str_to_title) %>% 
   mutate(across(c(X, Y), round, -1))
-```
 
-```{r dropdown-function}
-# created from this blog article https://albert-rapp.de/posts/18_connecting_reactable_ojs/18_connecting_reactable_ojs
-filter_fct <- function(values, name) {
-  tags$select(
-    tags$option(value = "", "All"),
-    purrr::map(unique(values), tags$option),
-    onchange = glue::glue(
-      "Reactable.setFilter(
-        'master-cell-table', 
-        '{name}', 
-        event.target.value  // This is the value of the dropdown menu
-      )"
-    )
-  )
+
+if (include_all_treatments == "yes") {
+    if (!is.null(list_of_treatments)) {
+      warning(
+        "include_all_treatments = \"yes\", but you included a list of treatments to filter. All treatments will be used."
+      )
+    }
+    
+  } else {
+    if (is.null(list_of_treatments)) {
+      stop(
+        "include_all_treatments = \"",
+        include_all_treatments,
+        "\", but list_of_treatments is NULL.",
+        "\nDid you forget to add a list of treatments?"
+      )
+    }
+    
+    if (!is.character(list_of_treatments)) {
+      stop(
+        "include_all_treatments = \"",
+        include_all_treatments,
+        "\", but list_of_treatments is not a character object.",
+        "\nDid you forget to add a list of treatments?"
+      )
+    }
+    
+    table_data <- table_data %>%
+      filter(Treatment %in% list_of_treatments)
+  }
+
+assign("summary_table_data", table_data, envir = .GlobalEnv)
 }
-```
 
-```{r make-master-table}
-reactable(
-  data = table_data,
+
+make_interactive_summary_table <- function(dataframe) {
+cell_table <- reactable(
+  data = dataframe,
   defaultSorted = c("Category", "Treatment", "Animal"),
   filterable = TRUE,
   showPageSizeOptions = TRUE,
-  elementId = "master-cell-table",
+  elementId = "cell-table",
   defaultPageSize = 15,
   defaultColDef = colDef(
     vAlign = "center",
@@ -173,8 +185,11 @@ reactable(
       style = list(borderRight = "1px solid #eee"),
       headerStyle = list(borderRight = "1px solid #eee")
     ),
-    Treatment = colDef(
+    Display_names = colDef(
       name = "Treatment"
+    ),
+    Treatment = colDef(
+      show = FALSE
     ),
     Sex = colDef(
       name = "Sex",
@@ -190,7 +205,7 @@ reactable(
       name = "eEPSC amplitude (pA)",
       filterable = FALSE,
       cell = react_sparkline(
-        table_data,
+        dataframe,
         line_color_ref = "Colours",
         show_area = TRUE,
         area_opacity = 1
@@ -200,7 +215,7 @@ reactable(
       name = "sEPSC amplitude (pA)",
       filterable = FALSE,
       cell = react_sparkline(
-        table_data,
+        dataframe,
         line_color_ref = "Colours",
         show_area = TRUE,
         area_opacity = 1
@@ -210,7 +225,7 @@ reactable(
       name = "Ra (MΩ)",
       filterable = FALSE,
       cell = react_sparkline(
-        table_data,
+        dataframe,
         line_color_ref = "Colours",
         labels = c("first", "last"),
         decimals = 1
@@ -218,5 +233,18 @@ reactable(
     )
   )
 )
+cell_table
+}
+```
+
+# Add ability to filter categories as well
+
+```{r}
+make_cell_summary_df(include_all_treatments = "no",
+                        list_of_treatments = c("Control", "PPP_and_HNMPA"))
+```
+
+```{r}
+make_interactive_summary_table(dataframe = summary_table_data)
 ```
 
