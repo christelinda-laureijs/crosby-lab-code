@@ -26,7 +26,7 @@ save_RDS_files <- "no"
 ```
 
 
-```{css}
+```{css increase-div-width}
 div.main-container {
   max-width: 1400px !important;
 }
@@ -43,7 +43,7 @@ cell_characteristics <- read.csv(here("Data/sample-cell-characteristics.csv")) %
 ```
 
 
-```{r}
+```{r cell-characteristics-table}
 cell_characteristics %>%
   rename_with(str_to_title) %>% 
   group_by(Treatment, Sex, Category) %>%
@@ -100,7 +100,7 @@ make_pruned_EPSC_data(data = raw_sEPSC_df,
 
 raw_sEPSC_df_for_table <- pruned_sEPSC_df_individual_cells %>% 
   group_by(letter) %>% 
-  summarize(amplitude_transformed = list(mean_amplitude))
+  summarize(spont_amplitude_transformed = list(mean_amplitude))
 ```
 
 
@@ -118,7 +118,7 @@ table_data <-
       synapses,
       sex,
       P1_transformed,
-      amplitude_transformed,
+      spont_amplitude_transformed,
       R_a,
       X,
       Y,
@@ -136,12 +136,30 @@ table_data <-
   mutate(across(c(X, Y), round, -1))
 ```
 
-```{r make-master-table, escape = F}
+```{r dropdown-function}
+# created from this blog article https://albert-rapp.de/posts/18_connecting_reactable_ojs/18_connecting_reactable_ojs
+filter_fct <- function(values, name) {
+  tags$select(
+    tags$option(value = "", "All"),
+    purrr::map(unique(values), tags$option),
+    onchange = glue::glue(
+      "Reactable.setFilter(
+        'master-cell-table', 
+        '{name}', 
+        event.target.value  // This is the value of the dropdown menu
+      )"
+    )
+  )
+}
+```
+
+```{r make-master-table}
 reactable(
   data = table_data,
   defaultSorted = c("Category", "Treatment", "Animal"),
   filterable = TRUE,
   showPageSizeOptions = TRUE,
+  elementId = "master-cell-table",
   defaultPageSize = 15,
   defaultColDef = colDef(
     vAlign = "center",
@@ -150,16 +168,20 @@ reactable(
   columns = list(
     Colours = colDef(show = FALSE),
     Letter = colDef(
+      name = "Letter",
       sticky = "left",
       style = list(borderRight = "1px solid #eee"),
       headerStyle = list(borderRight = "1px solid #eee")
     ),
+    Treatment = colDef(
+      name = "Treatment"
+    ),
     Sex = colDef(
-      filterable = TRUE,
+      name = "Sex",
       filterMethod = JS(
         "function(rows, columnId, filterValue) {
         return rows.filter(function(row) {
-          return String(row.values[columnId]) === filterValue
+          return String(row.values[columnId]).toUpperCase() === filterValue.toUpperCase()
         })
       }"
       )
@@ -174,7 +196,7 @@ reactable(
         area_opacity = 1
       )
     ),
-    Amplitude_transformed = colDef(
+    Spont_amplitude_transformed = colDef(
       name = "sEPSC amplitude (pA)",
       filterable = FALSE,
       cell = react_sparkline(
@@ -196,54 +218,5 @@ reactable(
     )
   )
 )
-```
-
-
-```{r}
-knitr::knit_exit()
-```
-
-```{r}
-characteristics %>% 
-  mutate(
-    image = sprintf("%s.png", letter)
-  )
-```
-
-
-
-```{r}
-characteristics %>%
-  rename_with(str_to_title) %>%
-  
-  reactable(columns = list(
-    Sex = colDef(filterable = TRUE),
-    filterMethod = JS(
-      "function(rows, columnId, filterValue ) {
-                                           return rows.filter(function(row) {
-                                           return String(row.values[columnId]) === filterValue
-                                           })
-                                           }"
-    )
-  ),
-  searchable = TRUE)
-```
-
-
-```{r}
-knitr::knit_exit()
-```
-
-
-```{r}
-characteristics$image = include_graphics(here(
-    paste0(
-      "Figures/Evoked-currents/Output-individual-plots/",
-      characteristics$letter,
-      ".png"
-    )
-  ))
-characteristics %>% 
-  kable()
 ```
 
