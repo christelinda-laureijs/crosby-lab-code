@@ -560,6 +560,179 @@ make_summary_EPSC_data <- function(data, current_type) {
   assign(paste0("summary_", current_type, "_df"), summary_df, envir = .GlobalEnv)
 }
 
+
+# Summary table ----
+
+make_cell_summary_df <- function(cell_characteristics_df,
+                                 include_all_treatments = "yes",
+                                 list_of_treatments = NULL,
+                                 include_all_categories = "yes",
+                                 list_of_categories = NULL) {
+  cell_characteristics_for_table <- cell_characteristics_df %>%
+    mutate(
+      R_a = lapply(str_split(R_a, pattern = ", "), FUN = as.numeric),
+      R_a = lapply(R_a, FUN = replace_na, replace = 0),
+      letter = factor(letter)
+    )
+  
+  table_data <-
+    merge(pruned_eEPSC_df_for_table, pruned_sEPSC_df_for_table, by = "letter") %>%
+    merge(., cell_characteristics_for_table, by = "letter") %>%
+    merge(., treatment_names_and_colours, by = "treatment") %>%
+    select(
+      c(
+        letter,
+        display_names,
+        treatment,
+        synapses,
+        sex,
+        P1_transformed,
+        spont_amplitude_transformed,
+        R_a,
+        X,
+        Y,
+        age,
+        animal,
+        category,
+        cell,
+        colours
+      )
+    ) %>%
+    rename_with(str_to_title) %>%
+    mutate(X = round(X, -1),
+           Y = round(Y, -1))
+  
+  if (include_all_treatments == "yes") {
+    if (!is.null(list_of_treatments)) {
+      warning(
+        "include_all_treatments = \"yes\", but you included a list of treatments to filter. All treatments will be used."
+      )
+    }
+    
+  } else {
+    if (is.null(list_of_treatments)) {
+      stop(
+        "include_all_treatments = \"",
+        include_all_treatments,
+        "\", but list_of_treatments is NULL.",
+        "\nDid you forget to add a list of treatments?"
+      )
+    }
+    
+    if (!is.character(list_of_treatments)) {
+      stop(
+        "include_all_treatments = \"",
+        include_all_treatments,
+        "\", but list_of_treatments is not a character object.",
+        "\nDid you forget to add a list of treatments?"
+      )
+    }
+    
+    table_data <- table_data %>%
+      filter(Treatment %in% list_of_treatments)
+  }
+  # Category filter
+  
+  if (include_all_categories == "yes") {
+    if (!is.null(list_of_categories)) {
+      warning(
+        "include_all_categories = \"yes\", but you included a list of categories to filter. All categories will be used."
+      )
+    }
+    
+  } else {
+    if (is.null(list_of_categories)) {
+      stop(
+        "include_all_categories = \"",
+        include_all_categories,
+        "\", but list_of_categories is NULL.",
+        "\nDid you forget to add a list of categories?"
+      )
+    }
+    
+    if (!is.character(list_of_categories)) {
+      stop(
+        "include_all_categories = \"",
+        include_all_categories,
+        "\", but list_of_categories is not a character object.",
+        "\nDid you forget to add a list of categories?"
+      )
+    }
+    
+    table_data <- table_data %>%
+      filter(Category %in% list_of_categories)
+  }
+  
+  assign("summary_table_data", table_data, envir = .GlobalEnv)
+}
+
+
+make_interactive_summary_table <- function(dataframe) {
+  cell_table <- reactable(
+    data = dataframe,
+    defaultSorted = c("Category", "Treatment", "Animal"),
+    filterable = TRUE,
+    showPageSizeOptions = TRUE,
+    elementId = "cell-table",
+    defaultPageSize = 15,
+    defaultColDef = colDef(vAlign = "center", headerVAlign = "center"),
+    columns = list(
+      Colours = colDef(show = FALSE),
+      Letter = colDef(
+        name = "Letter",
+        sticky = "left",
+        style = list(borderRight = "1px solid #eee"),
+        headerStyle = list(borderRight = "1px solid #eee")
+      ),
+      Display_names = colDef(name = "Treatment"),
+      Treatment = colDef(show = FALSE),
+      Sex = colDef(
+        name = "Sex",
+        filterMethod = JS(
+          "function(rows, columnId, filterValue) {
+        return rows.filter(function(row) {
+          return String(row.values[columnId]).toUpperCase() === filterValue.toUpperCase()
+        })
+      }"
+      )
+      ),
+      P1_transformed = colDef(
+        name = "eEPSC amplitude (pA)",
+        filterable = FALSE,
+        cell = react_sparkline(
+          dataframe,
+          line_color_ref = "Colours",
+          show_area = TRUE,
+          area_opacity = 1
+        )
+      ),
+      Spont_amplitude_transformed = colDef(
+        name = "sEPSC amplitude (pA)",
+        filterable = FALSE,
+        cell = react_sparkline(
+          dataframe,
+          line_color_ref = "Colours",
+          show_area = TRUE,
+          area_opacity = 1
+        )
+      ),
+      R_a = colDef(
+        name = "Ra (MΩ)",
+        filterable = FALSE,
+        cell = react_sparkline(
+          dataframe,
+          line_color_ref = "Colours",
+          labels = c("first", "last"),
+          decimals = 1
+        )
+      )
+    )
+  )
+  cell_table
+}
+
+
+
 # Plot data ----
 make_baseline_comparison_plot <- function(data,
                                           include_all_treatments = "yes",
