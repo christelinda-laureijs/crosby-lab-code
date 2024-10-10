@@ -62,13 +62,9 @@ make_pruned_EPSC_data(data = raw_sEPSC_df,
                       interval_length = 1)
 ```
 
-
-# Number of cells
-
-```{r cell-count-table}
-cell_characteristics <- read.csv(here("Data/sample-cell-characteristics.csv"))
+```{r}
+import_cell_characteristics_df(filename = "Data/sample-cell-characteristics.csv")
 ```
-
 
 ```{r cell-characteristics-table}
 cell_characteristics %>%
