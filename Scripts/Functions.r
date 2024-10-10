@@ -2203,6 +2203,18 @@ make_variance_df <- function(data,
   assign("variance_df", variance_df, envir = .GlobalEnv)
 }
 
+# TODO add citation to variance analysis paper ------------
+# TODO Add note about how this also uses a wilcox test to add a significance bracket; also add this to PPR plot single treatment -----
+#' Make a plot of variance measures for a single treatment. The variance measures are inverse coefficient of variation squared (variance_measure == "cv") or variance-to-mean ratio (variance_measure == "VMR").
+#' These can help determine if a mechanism is pre- or post-synaptic 
+#' 
+#' `make_variance_comparison_plot()` creates a connected scatter plot with 
+#' creates a categorical scatter plot with experimental state (i.e. baseline/before and after) on the x-axis
+#' and the paired-pulse ratio (PPR) on the y-axis. There are also lines connecting the "before" data point to the "after" data point for each letter.
+#' You may customize the baseline and post-modification label to any value if "Baseline" and "Post-hormone" do not work. For example, you may want to use the hormone name instead of "Post-hormone"
+#' 
+
+
 make_variance_comparison_plot <- function(data,
                                           plot_category,
                                           plot_treatment,
@@ -2367,7 +2379,32 @@ make_variance_comparison_plot <- function(data,
   variance_comparison_plot
 }
 
-make_cv_plot <- function(data, plot_treatment) {
+
+# TODO: Fill in required dataframe for cv function --------
+# TODO: Find out how to cite variance analysis paper -------
+
+#' Make a plot of coefficient of variation over time
+#' 
+#' `make_cv_plot()` enables you to save a plot of the coefficient of variation in evoked current amplitudes over time.
+#' 
+#' @param data A dataframe containing the following columns.
+#' @param plot_treatment A character value describing the treatment group. Defaults to "Control".
+#' 
+#' @export
+#' 
+#' @returns A ggplot object. If save_plot_PNGs is defined as "yes" in the Global Environment, it will also generate a .png file in the folder `Figures/Evoked-currents/CV` relative to the project directory.
+#' The treatment will be included with the filename.
+#' 
+#' @examples
+#' make_cv_plot(
+#'   data = pruned_eEPSC_df_all_cells,
+#'   plot_treatment = "Control"
+#')
+#' 
+#' @seealso [make_variance_comparison_plot()] to make plots of inverse coefficient of variation squared and VMR, which are useful to determine if a mechanism is pre- or post-synaptic.
+
+
+make_cv_plot <- function(data, plot_treatment = "Control") {
   plot_colour <- treatment_names_and_colours %>%
     filter(treatment == plot_treatment) %>%
     pull(colours)
@@ -2456,12 +2493,55 @@ make_PPR_before_vs_post_hormone_data <- function(data,
   assign("PPR_before_vs_post_hormone_data", PPR_df, envir = .GlobalEnv)
 }
 
+# TODO: Fill in columns for PPR -------
+# TODO: In Vignette describe treatment vs category, see example from make ppr plot for single treatment.
+
+#' Make a PPR plot for a single treatment
+#' 
+#' `make_PPR_plot_single_treatment()` creates a categorical scatter plot with experimental state (i.e. baseline/before and after) on the x-axis
+#' and the paired-pulse ratio (PPR) on the y-axis. There are also lines connecting the "before" data point to the "after" data point for each letter.
+#' You may customize the baseline and post-modification label to any value if "Baseline" and "Post-hormone" do not work. For example, you may want to use the hormone name instead of "Post-hormone"
+#' 
+#' 
+#' @param data Paired pulse ratio data, ideally generated from [make_PPR_before_vs_post_hormone_data()]. Must contain the following columns:
+#' 
+#' \itemize
+#'  \item 
+#'
+#' @param plot_treatment A character value describing the treatment group. Defaults to "Control".
+#' @param plot_category A numeric value describing the experimental category. In the sample dataset for this package, 2 represents
+#' experiments where insulin was applied continuously after a 5-minute baseline period. Here, `plot_treatment` represents antagonists that were present on the brain slice, or the animals were fasted, etc.
+#' @param large_axis_text A character value (must be "yes" or "no") describing if the axis text and labels should be large.
+#' If "yes", this activates a ggplot theme layer that increases the axis text size and legend spacing to accommodate the larger text.
+#' 
+#' @param baseline_label A character value for the x-axis label applied to the pre-hormone state. Defaults to "Baseline".
+#' @param post_modification_label A character value for x-axis label applied to the post-hormone or post-protocol state. Defaults to "Post-hormone" but you will likely change this to the hormone or protocol name.
+#' 
+#' @export
+#' 
+#' @returns A ggplot object. If save_plot_PNGs is defined as "yes" in the Global Environment, it will also generate a .png file in the folder `Figures/Evoked-currents/PPR` relative to the project directory.
+#' The treatment will be included in the filename.
+#' 
+#' @examples
+#' make_PPR_plot_single_treatment(data = PPR_before_vs_post_hormone_data,
+#'   plot_treatment = "Control",
+#'   plot_category = 2,
+#'   large_axis_text = "no",
+#'   baseline_label = "Baseline",
+#'   post_modification_label = "Insulin")
+#'   
+#' @seealso [make_PPR_plot_multiple_treatments()] to plot changes in PPR for multiple treatments.
+
 make_PPR_plot_single_treatment <- function(data,
-                                           plot_treatment,
+                                           plot_treatment = "Control",
                                            plot_category,
                                            large_axis_text = "no",
-                                           baseline_label,
-                                           post_modification_label) {
+                                           baseline_label = "Baseline",
+                                           post_modification_label = "Post-hormone") {
+  if (!large_axis_text %in% c("yes", "no")) {
+    stop("'large_axis_text' argument must be one of: 'yes' or 'no'")
+  }
+  
   plot_colour <- treatment_names_and_colours %>%
     filter(treatment == plot_treatment) %>%
     pull(colours)
@@ -2539,12 +2619,52 @@ make_PPR_plot_single_treatment <- function(data,
   PPR_single_plot
 }
 
+
+# TODO: Fill in columns for PPR dataset -------
+#' Make a PPR plot for multiple treatments
+#' 
+#' `make_PPR_plot_multiple_treatments()` creates a categorical scatter plot with experimental state (i.e. grouped as baseline/before and after) and treatment on the x-axis,
+#' and the paired-pulse ratio (PPR) on the y-axis. There are also lines connecting the "before" data point to the "after" data point for each letter. It is the same as [make_PPR_plot_multiple_treatments()] but for more than one treatment.
+#' You may customize the baseline and post-modification label to any value if "Baseline" and "Post-hormone" do not work. For example, you may want to use the hormone name instead of "Post-hormone"
+#' 
+#' 
+#' @param data Paired pulse ratio data, ideally generated from [make_PPR_before_vs_post_hormone_data()]. Must contain the following columns:
+#' 
+#' \itemize
+#'  \item 
+#'
+#' @param include_all_treatments A character value (must be "yes" or "no") describing if all treatments in the dataset should be included in the plot. Defaults to "yes", but if "no", you must define a `list_of_treatments`.
+#' @param list_of_treatments A list of character values describing the treatments you would like to have in the plot. Examples include `c("Control", "Fasting")`. Defaults to `NULL` since `include_all_treatments` is "yes" by default.
+#' @param plot_category A numeric value describing the experimental category. In the sample dataset for this package, 2 represents
+#' experiments where insulin was applied continuously after a 5-minute baseline period. Here, `plot_treatment` represents antagonists that were present on the brain slice, or the animals were fasted, etc.
+#' @param baseline_label A character value for the x-axis label applied to the pre-hormone state. Defaults to "Baseline".
+#' @param post_modification_label A character value for x-axis label applied to the post-hormone or post-protocol state. Defaults to "Post-hormone" but you will likely change this to the hormone or protocol name.
+#' 
+#' @export
+#' 
+#' @returns A ggplot object. If save_plot_PNGs is defined as "yes" in the Global Environment, it will also generate a .png file in the folder `Figures/Evoked-currents/PPR` relative to the project directory.
+#' 
+#' @examples
+#' make_PPR_plot_multiple_treatments(data = PPR_before_vs_post_hormone_data,
+#'   include_all_treatments = "yes",
+#'   plot_category = 2,
+#'   baseline_label = "B",
+#'   post_modification_label = "I")
+#'   
+#'   
+#' @seealso [make_PPR_plot_single_treatment()] to plot changes in PPR for a single treatment.
+
 make_PPR_plot_multiple_treatments <- function(data,
                                               include_all_treatments = "yes",
-                                              plot_category,
                                               list_of_treatments = NULL,
+                                              plot_category,
                                               baseline_label,
                                               post_modification_label) {
+  if (!include_all_treatments %in% c("yes", "no")) {
+    stop("'include_all_treatments' argument must be one of: 'yes' or 'no'")
+  }
+  
+  
   if (include_all_treatments == "yes") {
     treatment_info <- treatment_names_and_colours
     plot_data <- data %>%
@@ -2696,7 +2816,7 @@ import_ABF_file <-
 #' @param plot_episode A character value describing the sweep (e.g. `epi1`) that will be used for the plot.
 #' 
 #' 
-#' @returns A ggplot object. If save_plot_PNGs is defined as "yes" in the Global Environment, it will also generate a .png file in the following folders relative to the project directory:
+#' @returns A ggplot object. If save_plot_PNGs is defined as "yes" in the Global Environment, it will also generate a .png file in the folder `Figures/Spontaneous-currents/Representative-Traces` relative to the project directory.
 #' 
 #' `Figures/Spontaneous-currents/Representative-Traces`
 #' 
