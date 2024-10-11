@@ -33,9 +33,21 @@ div.main-container {
 
 ```
 
+
+```{r}
+import_cell_characteristics_df(filename = "Data/sample-cell-characteristics.csv")
+```
+
+
+```{r}
+cell_characteristics <- import_cell_characteristics_df_return("Data/sample-cell-characteristics.csv")
+```
+
+
+
 ```{r import-data}
 # Import and process evoked current data
-make_normalized_EPSC_data(filename = "Data/Sample-eEPSC-data.csv",
+test <- make_normalized_EPSC_data(filename = "Data/Sample-eEPSC-data.csv",
                           current_type = "eEPSC",
                           min_time_value = 0,
                           max_time_value = 25,
@@ -48,7 +60,7 @@ make_pruned_EPSC_data(data = raw_eEPSC_df,
                       baseline_length = 5,
                       interval_length = 1)
 
-make_normalized_EPSC_data(filename = "Data/Sample-sEPSC-data.csv",
+spont_data <- make_normalized_EPSC_data(filename = "Data/Sample-sEPSC-data.csv",
                           current_type = "sEPSC",
                           min_time_value = 0,
                           max_time_value = 25,
@@ -61,6 +73,11 @@ make_pruned_EPSC_data(data = raw_sEPSC_df,
                       baseline_length = 5,
                       interval_length = 1)
 ```
+
+```{r}
+spont_data
+```
+
 
 ```{r}
 import_cell_characteristics_df(filename = "Data/sample-cell-characteristics.csv")

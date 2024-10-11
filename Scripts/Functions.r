@@ -409,7 +409,8 @@ make_normalized_EPSC_data <- function(filename = "Data/Sample-eEPSC-data.csv",
       )
   }
   
-  assign(paste0("raw_", current_type, "_df"), raw_df, envir = .GlobalEnv)
+  return(raw_df)
+  #assign(paste0("raw_", current_type, "_df"), raw_df, envir = .GlobalEnv)
   
   if (save_RDS_files == "yes") {
     saveRDS(raw_df, file = here(
@@ -719,19 +720,41 @@ make_summary_EPSC_data <- function(data, current_type) {
 
 # Summary table ----
 
-#' Import cell characteristics data for summary table
+#' `import_cell_characteristics_df()` imports a .csv file containing detailed
+#' information about a cell (animal, age, sex, synapses, X- and Y-coordinates,
+#' etc.) so it can be merged with raw data, merged into a summary table, and
+#' used in downstream statistical analyses.
 #'
-#' @param filename A filepath to a .csv file, which will contain columns for details about a cell (animal, age, sex, synapses, X- and Y-coordinates, etc.).
-#' A mandatory column is `R_a` which contains information about the cell's access resistance. Each element of this column must be a sequence of numbers, separated by a comma and a single space.
-#' Although this will be read in as a character, do not add quotation marks around the values in this column. For example, `1.5, 1.5, 1.6, 1.7, 1.7, 1.8` is an acceptable `R_a` value for a single cell.
-#' The function will convert the character value into a list of numeric values (using stringr::str_split()).
-#' It will also convert blanks and `NA` values to 0.
-#' This allows access to be visualized as a sparkline in the interactive summary table made with [make_interactive_summary_table()].
+#' It will convert the access column (`R_a`) into a list of numeric values using
+#' stringr::str_split(). Blanks and `NA` values in `R_a` will be converted to 0.
 #'
+#' @section `R_a` formatting
+#' 
+#' `R_a` is a mandatory column with information about the cell's access
+#' resistance. Each element of this column must be a sequence of numbers,
+#' separated by a comma and a single space. Although this will be read in as a
+#' character, do not add quotation marks around the values in this column. For
+#' example, `1.5, 1.5, 1.6, 1.7, 1.7, 1.8` is an acceptable `R_a` value for a
+#' single cell.
+#' 
+#' `import_cell_characteristics_df()` will convert the character value into a
+#' list of numeric values (using `stringr::str_split()`). It will also convert
+#' blanks and `NA` values to 0. This allows access to be visualized as a
+#' sparkline in the interactive summary table made with
+#' [make_interactive_summary_table()].
+#' 
+#' @seealso [make_interactive_summary_table()] to generate an interactive table
+#'   with cell characteristics and raw data as sparklines.
+#'
+#' @param filename A filepath to a .csv file. See the details below for
+#'   information on required columns.
+#' 
 #' @returns A dataframe
 #' @export
 #'
 #' @examples
+#' import_cell_characteristics_df(filename = "Data/sample-cell-characteristics.csv")
+#' 
 import_cell_characteristics_df <- function(filename) {
   cell_characteristics <- read.csv(here(filename)) %>%
     mutate(
@@ -742,6 +765,15 @@ import_cell_characteristics_df <- function(filename) {
   assign("cell_characteristics", cell_characteristics, envir = .GlobalEnv)
 }
 
+import_cell_characteristics_df_return <- function(filename) {
+  read.csv(here(filename)) %>%
+    mutate(
+      R_a = lapply(str_split(R_a, pattern = ", "), FUN = as.numeric),
+      R_a = lapply(R_a, FUN = replace_na, replace = 0),
+      letter = factor(letter)
+    ) %>% 
+    return()
+}
 
 make_cell_summary_df <- function(cell_characteristics_df,
                                  include_all_treatments = "yes",
