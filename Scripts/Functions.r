@@ -42,15 +42,15 @@ add_new_cells <- function(new_raw_data_csv,
   
   # Required to see if new cells have associated data for synapses, treatment, sex, age, etc.
   cell_characteristics <-
-    read.csv(here(cell_characteristics_csv)) %>%
-    rename_with(tolower) %>%
-    rename(X = x, Y = y)
+    utils::read.csv(here::here(cell_characteristics_csv)) %>%
+    dplyr::rename_with(tolower) %>%
+    dplyr::rename(X = x, Y = y)
   
-  new_raw_data <- read.csv(here(new_raw_data_csv))
+  new_raw_data <- utils::read.csv(here::here(new_raw_data_csv))
   
   new_raw_data <- new_raw_data %>% 
-    rename_with(tolower) %>% 
-    mutate(id = factor(id))
+    dplyr::rename_with(tolower) %>% 
+    dplyr::mutate(id = factor(id))
   
   if (current_type == "eEPSC") {
     if (any(grepl("sEPSC", list_of_argument_names))) {
@@ -63,10 +63,10 @@ add_new_cells <- function(new_raw_data_csv,
       )
     }
     new_raw_data <- new_raw_data %>%
-      rename_with(tolower) %>%
-      rename(ID = id, P1 = p1, P2 = p2) %>%
-      group_by(letter) %>%
-      mutate(time = (row_number() - 1) / 12)
+      dplyr::rename_with(tolower) %>%
+      dplyr::rename(ID = id, P1 = p1, P2 = p2) %>%
+      dplyr::group_by(letter) %>%
+      dplyr::mutate(time = (dplyr::row_number() - 1) / 12)
   }
   
   if (current_type == "sEPSC") {
@@ -81,10 +81,10 @@ add_new_cells <- function(new_raw_data_csv,
     }
     
     new_raw_data <- new_raw_data %>%
-      rename_with(tolower) %>%
-      rename(ID = id) %>%
-      group_by(letter) %>%
-      mutate(amplitude = (-1) * amplitude,
+      dplyr::rename_with(tolower) %>%
+      dplyr::rename(ID = id) %>%
+      dplyr::group_by(letter) %>%
+      dplyr::mutate(amplitude = (-1) * amplitude,
              time = ((recording_num - 1) * 300 + (trace - 1) * 5 + (time_of_peak /
                                                                       1000)) / 60)
   }
@@ -120,16 +120,16 @@ add_new_cells <- function(new_raw_data_csv,
     merge(new_raw_data, cell_characteristics, by = "letter")
   
   # Import old Raw-Data sheet
-  old_raw_data <- read.csv(here(old_raw_data_csv), header = T)
+  old_raw_data <- utils::read.csv(here::here(old_raw_data_csv), header = T)
   
   old_raw_data <- old_raw_data %>% 
-    rename_with(tolower) %>% 
-    mutate(id = factor(id))
+    dplyr::rename_with(tolower) %>% 
+    dplyr::mutate(id = factor(id))
   
   if (current_type == "eEPSC") {
     old_raw_data <- old_raw_data %>%
-      rename_with(tolower) %>%
-      rename(
+      dplyr::rename_with(tolower) %>%
+      dplyr::rename(
         ID = id,
         P1 = p1,
         P2 = p2,
@@ -140,13 +140,13 @@ add_new_cells <- function(new_raw_data_csv,
   
   if (current_type == "sEPSC") {
     old_raw_data <- old_raw_data %>%
-      rename_with(tolower) %>%
-      rename(ID = id, X = x, Y = y)
+      dplyr::rename_with(tolower) %>%
+      dplyr::rename(ID = id, X = x, Y = y)
   }
   
   if (any(grepl("cells", colnames(old_raw_data)))) {
     old_raw_data <- old_raw_data %>%
-      rename(cell = cells)
+      dplyr::rename(cell = cells)
     
     warning("Renamed column 'cells' to 'cell'")
   }
@@ -186,17 +186,17 @@ add_new_cells <- function(new_raw_data_csv,
       letters_in_new_raw_data_spaces
     )
     
-    file.rename(from = here(old_raw_data_csv),
-                to = here(paste0(
-                  str_sub(old_raw_data_csv, 1, -5), "-old.csv"
+    file.rename(from = here::here(old_raw_data_csv),
+                to = here::here(paste0(
+                  stringr::str_sub(old_raw_data_csv, 1, -5), "-old.csv"
                 )))
     
-    full_raw_data <- bind_rows(old_raw_data, new_raw_data_complete)
+    full_raw_data <- dplyr::bind_rows(old_raw_data, new_raw_data_complete)
     
-    write.csv(full_raw_data, here(old_raw_data_csv), row.names = F)
+    utils::write.csv(full_raw_data, here::here(old_raw_data_csv), row.names = F)
     
-    file.remove(here(paste0(
-      str_sub(old_raw_data_csv, 1, -5), "-old.csv"
+    file.remove(here::here(paste0(
+      stringr::str_sub(old_raw_data_csv, 1, -5), "-old.csv"
     )))
   }
 }
@@ -261,7 +261,7 @@ add_new_cells <- function(new_raw_data_csv,
 #' 
 #'  * `P1` (for evoked currents only) May be negative-transformed if `negative_transform` == "yes"
 #'  * `P2` (for evoked currents only) May be negative-transformed if `negative_transform` == "yes"
-#'  * `PPR` (for evoked currents only) A numeric value that represents the paired pulse ratio (PPR) of the evoked currents, generated using `mutate(PPR = P2/P1)`.
+#'  * `PPR` (for evoked currents only) A numeric value that represents the paired pulse ratio (PPR) of the evoked currents, generated using `dplyr::mutate(PPR = P2/P1)`.
 #'  * `baseline_range` A logical value required for the baseline transformation. It is set to TRUE when time is within the baseline period (e.g. Time <= 5) and FALSE at all other times.
 #'  * `baseline_mean` A numeric value representing the mean evoked current amplitude during the baseline period. There is a different baseline_mean for each letter.
 #'  * `P1_transformed` A numeric value representing the first evoked current amplitude (pA) normalized relative to the mean amplitude during the recording's baseline.
@@ -332,12 +332,12 @@ make_normalized_EPSC_data <- function(filename = "Data/Sample-eEPSC-data.csv",
     stop("max_time_value is ", max_time_value, ", which is not divisible by interval_length, ", interval_length)
   }
   
-  raw_df <- read.csv(here(filename), header = TRUE) %>%
-    rename_with(tolower)
+  raw_df <- utils::read.csv(here::here(filename), header = TRUE) %>%
+    dplyr::rename_with(tolower)
   
   if (current_type == "eEPSC") {
     raw_df <- raw_df %>%
-      rename(
+      dplyr::rename(
         ID = id,
         P1 = p1,
         P2 = p2,
@@ -348,26 +348,26 @@ make_normalized_EPSC_data <- function(filename = "Data/Sample-eEPSC-data.csv",
   
   if (current_type == "sEPSC") {
     raw_df <- raw_df %>%
-      rename(ID = id, X = x, Y = y)
+      dplyr::rename(ID = id, X = x, Y = y)
   }
   
   raw_df <- raw_df %>%
-    mutate(across(c(
+    dplyr::mutate(dplyr::across(c(
       ID, letter, category, treatment, sex, synapses
     ), as.factor)) %>%
-    filter(time <= max_time_value)
+    dplyr::filter(time <= max_time_value)
   
   
   if (current_type == "eEPSC") {
     if (negative_transform_currents == "yes") {
     raw_df <- raw_df %>%
-      mutate(P1 = P1 * -1,
+      dplyr::mutate(P1 = P1 * -1,
              # Need positive current amplitude values to make plots more intuitive
              P2 = P2 * -1,
              PPR = P2 / P1)
     } else {
       raw_df <- raw_df %>%
-        mutate(PPR = P2 / P1)
+        dplyr::mutate(PPR = P2 / P1)
     }
   }
   
@@ -379,20 +379,20 @@ make_normalized_EPSC_data <- function(filename = "Data/Sample-eEPSC-data.csv",
                       -1)
   
   raw_df <- raw_df %>%
-    mutate(interval = cut(
+    dplyr::mutate(interval = cut(
       time,
       breaks = time_sequence,
       include.lowest = TRUE,
       labels = time_labels
     )) %>%
-    group_by(letter)
+    dplyr::group_by(letter)
   
   # Within each cell, normalize all of the eEPSC amplitudes
   # relative to the mean baseline amplitude
   
   if (current_type == "eEPSC") {
     raw_df <- raw_df %>%
-      mutate(
+      dplyr::mutate(
         baseline_range = (time <= baseline_length),
         baseline_mean = sum(P1 * baseline_range) / sum(baseline_range),
         P1_transformed = (P1 / baseline_mean) * 100,
@@ -402,7 +402,7 @@ make_normalized_EPSC_data <- function(filename = "Data/Sample-eEPSC-data.csv",
   
   if (current_type == "sEPSC") {
     raw_df <- raw_df %>%
-      mutate(
+      dplyr::mutate(
         baseline_range = (time <= baseline_length),
         baseline_mean = sum(amplitude * baseline_range) / sum(baseline_range),
         amplitude_transformed = (amplitude / baseline_mean) * 100
@@ -413,7 +413,7 @@ make_normalized_EPSC_data <- function(filename = "Data/Sample-eEPSC-data.csv",
   #assign(paste0("raw_", current_type, "_df"), raw_df, envir = .GlobalEnv)
   
   if (save_RDS_files == "yes") {
-    saveRDS(raw_df, file = here(
+    saveRDS(raw_df, file = here::here(
       paste0("Data/Output-Data-from-R/raw_", current_type, "_df.RDS")
     ))
   }
@@ -433,7 +433,7 @@ make_normalized_EPSC_data <- function(filename = "Data/Sample-eEPSC-data.csv",
 #'  * `ID` A character value for the recording filename.
 #'  * `P1` A numeric value representing the amplitude of the first evoked current in pA.
 #'  * `P2` A numeric value representing the amplitude of the second evoked current in pA.
-#'  * `PPR` A numeric value that represents the paired pulse ratio (PPR) of the evoked currents, generated using `mutate(PPR = P2/P1)` in [make_normalized_EPSC_data()]
+#'  * `PPR` A numeric value that represents the paired pulse ratio (PPR) of the evoked currents, generated using `dplyr::mutate(PPR = P2/P1)` in [make_normalized_EPSC_data()]
 #'  * `X` A numeric value representing the x-value of the cell's location in µm.
 #'  * `Y` A numeric value representing the y-value of the cell's location in µm.
 #'  * `age` A numeric value representing the animal's age. Can be any value as long as the time units are consistent throughout (e.g. don't mix up days and months when reporting animal ages).
@@ -486,7 +486,7 @@ make_pruned_EPSC_data <- function(data = raw_eEPSC_df,
   
   # Prune within individual cells
   pruned_df_individual_cells <- data %>%
-    mutate(
+    dplyr::mutate(
       interval_pruned = cut(
         time,
         breaks = time_sequence,
@@ -494,7 +494,7 @@ make_pruned_EPSC_data <- function(data = raw_eEPSC_df,
         labels = time_labels
       )
     ) %>%
-    group_by(category, letter, sex, treatment, interval_pruned)
+    dplyr::group_by(category, letter, sex, treatment, interval_pruned)
   
   if (current_type == "eEPSC") {
     pruned_df_individual_cells <- pruned_df_individual_cells %>%
@@ -514,8 +514,8 @@ make_pruned_EPSC_data <- function(data = raw_eEPSC_df,
       )
     
     pruned_df_for_table <- pruned_df_individual_cells %>%
-      group_by(letter) %>% 
-      summarize(P1_transformed = list(mean_P1))
+      dplyr::group_by(letter) %>% 
+      dplyr::summarize(P1_transformed = list(mean_P1))
   }
   
   if (current_type == "sEPSC") {
@@ -535,17 +535,17 @@ make_pruned_EPSC_data <- function(data = raw_eEPSC_df,
         synapses = unique(synapses),
         time = last(time) # Time value at the end of the interval; used for plots
       ) %>%
-      group_by(letter) %>%
+      dplyr::group_by(letter) %>%
       # Obtain normalized frequency
-      mutate(
+      dplyr::mutate(
         baseline_range = (time <= baseline_length),
         baseline_mean_frequency = sum(frequency * baseline_range) / sum(baseline_range),
         frequency_transformed = (frequency / baseline_mean_frequency) * 100
       )
     
     pruned_df_for_table <- pruned_df_individual_cells %>% 
-      group_by(letter) %>% 
-      summarize(spont_amplitude_transformed = list(mean_amplitude))
+      dplyr::group_by(letter) %>% 
+      dplyr::summarize(spont_amplitude_transformed = list(mean_amplitude))
   }
   
   assign(
@@ -561,7 +561,7 @@ make_pruned_EPSC_data <- function(data = raw_eEPSC_df,
   )
   
   if (save_RDS_files == "yes") {
-    saveRDS(pruned_df_individual_cells, file = here(
+    saveRDS(pruned_df_individual_cells, file = here::here(
       paste0(
         "Data/Output-Data-from-R/pruned_",
         current_type,
@@ -573,7 +573,7 @@ make_pruned_EPSC_data <- function(data = raw_eEPSC_df,
   # Prune all cells
   if (current_type == "eEPSC") {
     pruned_df_all_cells <- data %>%
-      mutate(
+      dplyr::mutate(
         interval_pruned = cut(
           time,
           breaks = time_sequence,
@@ -581,7 +581,7 @@ make_pruned_EPSC_data <- function(data = raw_eEPSC_df,
           labels = time_labels
         )
       ) %>%
-      group_by(category, letter, sex, treatment, interval_pruned) %>%
+      dplyr::group_by(category, letter, sex, treatment, interval_pruned) %>%
       reframe(
         mean_P1 = mean(P1_transformed, na.rm = TRUE),
         sd_P1 = sd(P1_transformed, na.rm = TRUE),
@@ -592,7 +592,7 @@ make_pruned_EPSC_data <- function(data = raw_eEPSC_df,
         category = unique(category),
         time = last(time)
       ) %>%
-      group_by(category, interval_pruned, sex, treatment) %>%
+      dplyr::group_by(category, interval_pruned, sex, treatment) %>%
       reframe(
         mean_P1_all_cells = mean(mean_P1, na.rm = TRUE),
         sd_P1_all_cells = sd(mean_P1, na.rm = TRUE),
@@ -607,8 +607,8 @@ make_pruned_EPSC_data <- function(data = raw_eEPSC_df,
   
   if (current_type == "sEPSC") {
     pruned_df_all_cells <- pruned_df_individual_cells %>%
-      ungroup() %>%
-      group_by(category, interval_pruned, sex, treatment) %>%
+      dplyr::ungroup() %>%
+      dplyr::group_by(category, interval_pruned, sex, treatment) %>%
       reframe(
         mean_all_amplitude = mean(mean_amplitude, na.rm = TRUE),
         mean_all_raw_amplitude = mean(mean_raw_amplitude, na.rm = TRUE),
@@ -633,7 +633,7 @@ make_pruned_EPSC_data <- function(data = raw_eEPSC_df,
          envir = .GlobalEnv)
   
   if (save_RDS_files == "yes") {
-    saveRDS(pruned_df_all_cells, file = here(
+    saveRDS(pruned_df_all_cells, file = here::here(
       paste0(
         "Data/Output-Data-from-R/pruned_",
         current_type,
@@ -671,8 +671,8 @@ make_summary_EPSC_data <- function(data, current_type) {
   
   if (current_type == "eEPSC") {
     summary_df <- data %>%
-      group_by(category, letter, sex, treatment, interval) %>%
-      summarize(
+      dplyr::group_by(category, letter, sex, treatment, interval) %>%
+      dplyr::summarize(
         mean_P1_transformed = mean(P1_transformed, na.rm = TRUE),
         mean_P1_raw = mean(P1, na.rm = TRUE),
         n = n(),
@@ -690,14 +690,14 @@ make_summary_EPSC_data <- function(data, current_type) {
         time = last(time),
         synapses = unique(synapses)
       ) %>%
-      ungroup()
+      dplyr::ungroup()
   }
   
   
   if (current_type == "sEPSC") {
     summary_df <- data %>%
-      group_by(category, letter, sex, treatment, interval) %>%
-      summarize(
+      dplyr::group_by(category, letter, sex, treatment, interval) %>%
+      dplyr::summarize(
         mean_transformed_amplitude = mean(mean_amplitude, na.rm = TRUE),
         mean_raw_amplitude = mean(mean_raw_amplitude, na.rm = TRUE),
         sd_all_amplitude = sd(mean_amplitude, na.rm = TRUE),
@@ -716,9 +716,7 @@ make_summary_EPSC_data <- function(data, current_type) {
   assign(paste0("summary_", current_type, "_df"), summary_df, envir = .GlobalEnv)
 }
 
-# TODO: Ensure description is one paragraph for all ------
-
-# Summary table ----
+# import_cell_characteristics_df DONE  -------
 
 #' `import_cell_characteristics_df()` imports a .csv file containing detailed
 #' information about a cell (animal, age, sex, synapses, X- and Y-coordinates,
@@ -756,24 +754,15 @@ make_summary_EPSC_data <- function(data, current_type) {
 #' import_cell_characteristics_df(filename = "Data/sample-cell-characteristics.csv")
 #' 
 import_cell_characteristics_df <- function(filename) {
-  cell_characteristics <- read.csv(here(filename)) %>%
-    mutate(
-      R_a = lapply(str_split(R_a, pattern = ", "), FUN = as.numeric),
-      R_a = lapply(R_a, FUN = replace_na, replace = 0),
+  cell_characteristics <- utils::read.csv(here::here(filename)) %>%
+    dplyr::mutate(
+      R_a = lapply(stringr::str_split(R_a, pattern = ", "), FUN = as.numeric),
+      R_a = lapply(R_a, FUN = tidyr::replace_na, replace = 0),
       letter = factor(letter)
     )
   assign("cell_characteristics", cell_characteristics, envir = .GlobalEnv)
 }
 
-import_cell_characteristics_df_return <- function(filename) {
-  read.csv(here(filename)) %>%
-    mutate(
-      R_a = lapply(str_split(R_a, pattern = ", "), FUN = as.numeric),
-      R_a = lapply(R_a, FUN = replace_na, replace = 0),
-      letter = factor(letter)
-    ) %>% 
-    return()
-}
 
 make_cell_summary_df <- function(cell_characteristics_df,
                                  include_all_treatments = "yes",
@@ -784,7 +773,7 @@ make_cell_summary_df <- function(cell_characteristics_df,
     merge(pruned_eEPSC_df_for_table, pruned_sEPSC_df_for_table, by = "letter") %>%
     merge(., cell_characteristics_df, by = "letter") %>%
     merge(., treatment_names_and_colours, by = "treatment") %>%
-    select(
+    dplyr::select(
       c(
         letter,
         display_names,
@@ -803,8 +792,8 @@ make_cell_summary_df <- function(cell_characteristics_df,
         colours
       )
     ) %>%
-    rename_with(str_to_title) %>%
-    mutate(X = round(X, -1),
+    dplyr::rename_with(stringr::str_to_title) %>%
+    dplyr::mutate(X = round(X, -1),
            Y = round(Y, -1))
   
   if (include_all_treatments == "yes") {
@@ -834,7 +823,7 @@ make_cell_summary_df <- function(cell_characteristics_df,
     }
     
     table_data <- table_data %>%
-      filter(Treatment %in% list_of_treatments)
+      dplyr::filter(Treatment %in% list_of_treatments)
   }
   # Category filter
   
@@ -865,7 +854,7 @@ make_cell_summary_df <- function(cell_characteristics_df,
     }
     
     table_data <- table_data %>%
-      filter(Category %in% list_of_categories)
+      dplyr::filter(Category %in% list_of_categories)
   }
   
   assign("summary_table_data", table_data, envir = .GlobalEnv)
@@ -962,7 +951,7 @@ make_baseline_comparison_plot <- function(data,
   if (include_all_treatments == "yes") {
     treatment_info <- treatment_names_and_colours
     plot_data <- data %>%
-      filter(treatment %in% treatment_names_and_colours$treatment) %>%
+      dplyr::filter(treatment %in% treatment_names_and_colours$treatment) %>%
       droplevels()
     
     if (!is.null(list_of_treatments)) {
@@ -991,9 +980,9 @@ make_baseline_comparison_plot <- function(data,
     }
     
     treatment_info <- treatment_names_and_colours %>%
-      filter(treatment %in% list_of_treatments)
+      dplyr::filter(treatment %in% list_of_treatments)
     plot_data <- data %>%
-      filter(treatment %in% list_of_treatments) %>%
+      dplyr::filter(treatment %in% list_of_treatments) %>%
       droplevels()
   }
   
@@ -1046,54 +1035,54 @@ make_baseline_comparison_plot <- function(data,
   }
   
   baseline_comparison_plot <- plot_data %>%
-    filter(interval == baseline_interval) %>%
-    mutate(
-      treatment = str_replace_all(
+    dplyr::filter(interval == baseline_interval) %>%
+    dplyr::mutate(
+      treatment = stringr::str_replace_all(
         treatment,
         setNames(treatment_info$display_names, treatment_info$treatment)
       ),
       treatment = factor(treatment, levels = treatment_info$display_names)
     ) %>%
-    ggplot(aes(
+    ggplot2::ggplot(ggplot2::aes(
       x = treatment,
       y = .data[[y_var]],
       color = treatment,
       shape = sex
     )) +
-    labs(x = NULL, y = y_title) +
-    geom_sina(
+    ggplot2::labs(x = NULL, y = y_title) +
+    ggforce::geom_sina(
       bw = 12,
       alpha = 0.8,
       maxwidth = 0.5,
       size = 2
     ) +
-    stat_summary(
+    ggplot2::stat_summary(
       fun.data = mean_se,
       geom = "pointrange",
       color = mean_point_colour,
       size = mean_point_size + 0.2,
       alpha = 0.8
     ) +
-    scale_color_manual(breaks = treatment_info$display_names,
+    ggplot2::scale_color_manual(breaks = treatment_info$display_names,
                        values = treatment_info$colours) +
-    scale_shape_manual(values = c(17, 16)) +
-    theme(legend.position = "right",
-          legend.background = element_rect(fill = NA),
+    ggplot2::scale_shape_manual(values = c(17, 16)) +
+    ggplot2::theme(legend.position = "right",
+          legend.background = ggplot2::element_rect(fill = NA),
     ) +
-    guides(color = "none", shape = guide_legend(reverse = TRUE))
+    ggplot2::guides(color = "none", shape = guide_legend(reverse = TRUE))
   
   if (large_axis_text == "yes") {
     baseline_comparison_plot <- baseline_comparison_plot +
-      theme(
-        axis.text.x = element_text(size = 24, margin = margin(t = 10)),
-        axis.title.y = element_text(size = 24, face = "plain")
+      ggplot2::theme(
+        axis.text.x = ggplot2::element_text(size = 24, margin = margin(t = 10)),
+        axis.title.y = ggplot2::element_text(size = 24, face = "plain")
       )
   }
   
   if (save_plot_pngs == "yes") {
-    ggsave(
+    ggplot2::ggsave(
       baseline_comparison_plot,
-      path = here(filepath),
+      path = here::here(filepath),
       file = paste0(
         "Baseline-",
         parameter,
@@ -1142,18 +1131,18 @@ make_raw_plots <-
     }
     
     df <- data %>%
-      filter(category == plot_category) %>%
-      filter(treatment == plot_treatment)
+      dplyr::filter(category == plot_category) %>%
+      dplyr::filter(treatment == plot_treatment)
     
     
     letters <- as.character(unique(unlist(df$letter)))
     
     plot_colour <- treatment_names_and_colours %>%
-      filter(treatment == plot_treatment) %>%
+      dplyr::filter(treatment == plot_treatment) %>%
       pull(colours)
     
     treatment_label <- treatment_names_and_colours %>%
-      filter(treatment == plot_treatment) %>%
+      dplyr::filter(treatment == plot_treatment) %>%
       pull(treatment)
     
     if (current_type == "eEPSC") {
@@ -1235,7 +1224,7 @@ make_raw_plots <-
     
     
     for (i in letters) {
-      plot_df <- df %>% filter(letter == i)
+      plot_df <- df %>% dplyr::filter(letter == i)
       if (current_type == "sEPSC" &
           pruned == "yes" &
           parameter == "amplitude") {
@@ -1243,7 +1232,7 @@ make_raw_plots <-
         
         list_of_plots[[i]] <- ggplot(
           plot_df,
-          aes(
+          ggplot2::aes(
             x = time,
             y = mean_amplitude,
             ymin = mean_amplitude - se,
@@ -1252,7 +1241,7 @@ make_raw_plots <-
         )
         
       } else {
-        list_of_plots[[i]] <- ggplot(plot_df, aes(x = time, y = .data[[parameter]]))
+        list_of_plots[[i]] <- ggplot(plot_df, ggplot2::aes(x = time, y = .data[[parameter]]))
         
       }
       
@@ -1266,13 +1255,13 @@ make_raw_plots <-
             unique(plot_df$sex)
           )
         ) +
-        labs(x = "Time (min)", y = y_title)
+        ggplot2::labs(x = "Time (min)", y = y_title)
       
       if (current_type == "sEPSC" &
           pruned == "yes" &
           parameter == "amplitude") {
         list_of_plots[[i]] <- list_of_plots[[i]] +
-          geom_pointrange(
+          ggplot2::geom_pointrange(
             shape = if (unique(plot_df$sex) == "Male") {
               male_shape
             } else {
@@ -1284,7 +1273,7 @@ make_raw_plots <-
           )
       } else {
         list_of_plots[[i]] <- list_of_plots[[i]] +
-          geom_point(
+          ggplot2::geom_point(
             shape = if (unique(plot_df$sex) == "Male") {
               male_shape
             } else {
@@ -1305,9 +1294,9 @@ make_raw_plots <-
       }
       
       # Get limits of x- and y-axes
-      ymax <- layer_scales(list_of_plots[[i]])$y$get_limits()[2]
-      xmax <- layer_scales(list_of_plots[[i]])$x$get_limits()[2]
-      ymax2 <- layer_scales(list_of_plots[[i]])$y$get_limits()[2]
+      ymax <- ggplot2::layer_scales(list_of_plots[[i]])$y$get_limits()[2]
+      xmax <- ggplot2::layer_scales(list_of_plots[[i]])$x$get_limits()[2]
+      ymax2 <- ggplot2::layer_scales(list_of_plots[[i]])$y$get_limits()[2]
       
       # If hormone_added = Insulin, CCK, i.e. anything other than "HFS" (high frequency stimulation),
       # add an annotated line over the application period:
@@ -1315,7 +1304,7 @@ make_raw_plots <-
       if (hormone_added != "HFS") {
         list_of_plots[[i]] <-
           list_of_plots[[i]] +
-          annotate(
+          ggplot2::annotate(
             geom = "segment",
             x = hormone_or_HFS_start_time,
             xend = xmax,
@@ -1327,7 +1316,7 @@ make_raw_plots <-
         
         list_of_plots[[i]] <-
           list_of_plots[[i]] +
-          annotate(
+          ggplot2::annotate(
             geom = "text",
             x = hormone_or_HFS_start_time,
             y = ymax2 + 0.16 * ymax2,
@@ -1344,7 +1333,7 @@ make_raw_plots <-
       if (hormone_added == "HFS") {
         list_of_plots[[i]] <-
           list_of_plots[[i]] +
-          annotate(
+          ggplot2::annotate(
             geom = "segment",
             x = hormone_or_HFS_start_time,
             y = ymax + 0.22 * ymax,
@@ -1356,7 +1345,7 @@ make_raw_plots <-
         
         list_of_plots[[i]] <-
           list_of_plots[[i]] +
-          annotate(
+          ggplot2::annotate(
             geom = "text",
             x = hormone_or_HFS_start_time,
             y = ymax + 0.27 * ymax,
@@ -1368,9 +1357,9 @@ make_raw_plots <-
       }
       
       if (save_plot_pngs == "yes") {
-        ggsave(
+        ggplot2::ggsave(
           list_of_plots[[i]],
-          path = here(filepath),
+          path = here::here(filepath),
           file = paste0(i, annotation, ".png"),
           width = 7,
           height = 5,
@@ -1417,7 +1406,7 @@ perform_t_tests_for_summary_plot <- function(data,
     treatment_info <- treatment_names_and_colours
     t_test_data <- data %>%
       semi_join(treatment_info, by = c("treatment")) %>%
-      filter(treatment %in% treatment_info$treatment)
+      dplyr::filter(treatment %in% treatment_info$treatment)
     
     if (!is.null(list_of_treatments)) {
       warning(
@@ -1450,9 +1439,9 @@ perform_t_tests_for_summary_plot <- function(data,
     }
     
     treatment_info <- treatment_names_and_colours %>%
-      filter(treatment %in% list_of_treatments)
+      dplyr::filter(treatment %in% list_of_treatments)
     t_test_data <- data %>%
-      filter(treatment %in% list_of_treatments) %>%
+      dplyr::filter(treatment %in% list_of_treatments) %>%
       droplevels()
   }
   
@@ -1471,8 +1460,8 @@ perform_t_tests_for_summary_plot <- function(data,
     
     if (parameter == "amplitude") {
       t_test_results <- t_test_data %>%
-        filter(category == test_category) %>%
-        group_by(treatment) %>%
+        dplyr::filter(category == test_category) %>%
+        dplyr::group_by(treatment) %>%
         pairwise_t_test(
           mean_P1_transformed ~ interval,
           ref.group = baseline_interval,
@@ -1500,8 +1489,8 @@ perform_t_tests_for_summary_plot <- function(data,
     
     if (parameter == "amplitude") {
       t_test_results <- t_test_data %>%
-        filter(category == test_category) %>%
-        group_by(treatment) %>%
+        dplyr::filter(category == test_category) %>%
+        dplyr::group_by(treatment) %>%
         pairwise_t_test(
           mean_transformed_amplitude ~ interval,
           ref.group = baseline_interval,
@@ -1512,8 +1501,8 @@ perform_t_tests_for_summary_plot <- function(data,
     
     if (parameter == "raw_amplitude") {
       t_test_results <- t_test_data %>%
-        filter(category == test_category) %>%
-        group_by(treatment) %>%
+        dplyr::filter(category == test_category) %>%
+        dplyr::group_by(treatment) %>%
         pairwise_t_test(
           mean_raw_amplitude ~ interval,
           ref.group = baseline_interval,
@@ -1524,8 +1513,8 @@ perform_t_tests_for_summary_plot <- function(data,
     
     if (parameter == "frequency") {
       t_test_results <- t_test_data %>%
-        filter(category == test_category) %>%
-        group_by(treatment) %>%
+        dplyr::filter(category == test_category) %>%
+        dplyr::group_by(treatment) %>%
         pairwise_t_test(
           mean_transformed_frequency ~ interval,
           ref.group = baseline_interval,
@@ -1536,8 +1525,8 @@ perform_t_tests_for_summary_plot <- function(data,
     
     if (parameter == "raw_frequency") {
       t_test_results <- t_test_data %>%
-        filter(category == test_category) %>%
-        group_by(treatment) %>%
+        dplyr::filter(category == test_category) %>%
+        dplyr::group_by(treatment) %>%
         pairwise_t_test(
           mean_raw_frequency ~ interval,
           ref.group = baseline_interval,
@@ -1548,10 +1537,10 @@ perform_t_tests_for_summary_plot <- function(data,
   }
   
   t_test_table <- t_test_results %>%
-    mutate(
+    dplyr::mutate(
       statistic = round(statistic, 2),
-      p_string = pvalString(p.adj),
-      significance_stars = case_when(p.adj.signif == "ns" ~ "", T ~ p.adj.signif)
+      p_string = lazyWeave::pvalString(p.adj),
+      significance_stars = dplyr::case_when(p.adj.signif == "ns" ~ "", T ~ p.adj.signif)
     )
   
   # Need sequence of integers from 1 to the maximum number of intervals
@@ -1564,7 +1553,7 @@ perform_t_tests_for_summary_plot <- function(data,
   )
   
   t_test_table <- merge(positions_df, t_test_table, by = "group2") %>%
-    select(
+    dplyr::select(
       treatment,
       .y.,
       group1,
@@ -1577,14 +1566,14 @@ perform_t_tests_for_summary_plot <- function(data,
       significance_stars,
       asterisk_time
     ) %>%
-    arrange(match(treatment, treatment_info$treatment))
+    dplyr::arrange(match(treatment, treatment_info$treatment))
   
   assign(paste0("t_test_", current_type, "_", parameter),
          t_test_table,
          envir = .GlobalEnv)
   
   if (save_RDS_files == "yes") {
-    saveRDS(t_test_table, file = here(
+    saveRDS(t_test_table, file = here::here(
       paste0("Data/Output-Data-from-R/t_test_", current_type, ".RDS")
     ))
   }
@@ -1625,14 +1614,14 @@ make_summary_plots <- function(plot_category,
   }
   
   df <-
-    data %>% filter(category == plot_category) %>% filter(treatment == plot_treatment)
+    data %>% dplyr::filter(category == plot_category) %>% dplyr::filter(treatment == plot_treatment)
   
   plot_colour <- treatment_names_and_colours %>%
-    filter(treatment == plot_treatment) %>%
+    dplyr::filter(treatment == plot_treatment) %>%
     pull(colours)
   
   plot_colour_pale <- treatment_names_and_colours %>%
-    filter(treatment == plot_treatment) %>%
+    dplyr::filter(treatment == plot_treatment) %>%
     pull(very_pale_colours)
   
   if (current_type == "eEPSC") {
@@ -1727,7 +1716,7 @@ make_summary_plots <- function(plot_category,
   }
   
   treatment_plot <- df %>%
-    ggplot(aes(
+    ggplot2::ggplot(ggplot2::aes(
       x = time,
       y = .data[[y_var]],
       ymin = .data[[y_var]] - .data[[se_var]],
@@ -1736,13 +1725,13 @@ make_summary_plots <- function(plot_category,
   
   if (shade_intervals == "yes") {
     treatment_plot <- treatment_plot +
-      geom_rect(aes(
+      ggplot2::geom_rect(ggplot2::aes(
         xmin = 5,
         xmax = 10,
         ymin = -5,
         ymax = y_axis_limit
       ), fill = rectangle_shading_colour) +
-      geom_rect(aes(
+      ggplot2::geom_rect(ggplot2::aes(
         xmin = 15,
         xmax = 20,
         ymin = -5,
@@ -1751,23 +1740,23 @@ make_summary_plots <- function(plot_category,
   }
   
   treatment_plot <- treatment_plot +
-    geom_pointrange(
-      aes(color = sex, shape = sex),
+    ggplot2::geom_pointrange(
+      ggplot2::aes(color = sex, shape = sex),
       size = if (large_axis_text == "yes") {
         1.3
       } else {
         0.9
       },
       alpha = 1,
-      position = position_dodge(width = if (current_type == "eEPSC") {
+      position = ggplot2::position_dodge(width = if (current_type == "eEPSC") {
         0.3
       } else {
         0
       })
     ) +
-    geom_hline(yintercept = 100, linetype = "dashed") +
-    coord_cartesian(ylim = c(0, y_axis_limit)) +
-    labs(
+    ggplot2::geom_hline(yintercept = 100, linetype = "dashed") +
+    ggplot2::coord_cartesian(ylim = c(0, y_axis_limit)) +
+    ggplot2::labs(
       x = "Time (min)",
       y = y_title,
       shape = "Sex",
@@ -1776,14 +1765,14 @@ make_summary_plots <- function(plot_category,
   
   if (large_axis_text == "yes") {
     treatment_plot <- treatment_plot +
-      theme(
-        axis.title = element_text(size = 24, face = "plain"),
-        legend.title = element_blank(),
+      ggplot2::theme(
+        axis.title = ggplot2::element_text(size = 24, face = "plain"),
+        legend.title = ggplot2::element_blank(),
         legend.position = "inside",
         legend.position.inside = c(0.17, 0.13),
-        legend.text = element_text(size = 14),
+        legend.text = ggplot2::element_text(size = 14),
         legend.key.spacing.y = unit(0.5, "cm"),
-        legend.background = element_rect(fill = NA)
+        legend.background = ggplot2::element_rect(fill = NA)
       )
   }
   
@@ -1791,31 +1780,31 @@ make_summary_plots <- function(plot_category,
   
   if (is.na(df$n[df$sex == "Female"][1])) {
     treatment_plot <- treatment_plot +
-      scale_shape_manual(values = c(male_shape), labels = c((paste0(
+      ggplot2::scale_shape_manual(values = c(male_shape), labels = c((paste0(
         "Males, n = ", df$n[df$sex == "Male"][1]
       )))) +
-      scale_color_manual(values = c(plot_colour), labels = c((paste0(
+      ggplot2::scale_color_manual(values = c(plot_colour), labels = c((paste0(
         "Males, n = ", df$n[df$sex == "Male"][1]
       ))))
     
   } else if (is.na(df$n[df$sex == "Male"][1])) {
     treatment_plot <- treatment_plot +
-      scale_shape_manual(values = c(female_shape), labels = c((paste0(
+      ggplot2::scale_shape_manual(values = c(female_shape), labels = c((paste0(
         "Females, n = ", df$n[df$sex == "Female"][1]
       )))) +
-      scale_color_manual(values = c(plot_colour_pale),
+      ggplot2::scale_color_manual(values = c(plot_colour_pale),
                          labels = c((paste0(
                            "Females, n = ", df$n[df$sex == "Female"][1]
                          ))))
   } else {
     treatment_plot <- treatment_plot +
-      scale_shape_manual(values = c(female_shape, male_shape),
+      ggplot2::scale_shape_manual(values = c(female_shape, male_shape),
                          labels = c((paste0(
                            "Females, n = ", df$n[df$sex == "Female"][1]
                          )), (paste0(
                            "Males, n = ", df$n[df$sex == "Male"][1]
                          )))) +
-      scale_color_manual(values = c(plot_colour_pale, plot_colour),
+      ggplot2::scale_color_manual(values = c(plot_colour_pale, plot_colour),
                          labels = c((paste0(
                            "Females, n = ", df$n[df$sex == "Female"][1]
                          )), (paste0(
@@ -1826,7 +1815,7 @@ make_summary_plots <- function(plot_category,
   # Get limits of x- and y-axes
   ymax <- y_axis_limit - 25
   xmax <-
-    layer_scales(treatment_plot)$x$get_limits()[2]
+    ggplot2::layer_scales(treatment_plot)$x$get_limits()[2]
   
   # If hormone_added = Insulin, CCK, i.e. anything other than "HFS" (high frequency stimulation),
   # add an annotated line over the application period:
@@ -1834,7 +1823,7 @@ make_summary_plots <- function(plot_category,
   if (hormone_added != "HFS") {
     treatment_plot <-
       treatment_plot +
-      annotate(
+      ggplot2::annotate(
         geom = "segment",
         x = hormone_or_HFS_start_time,
         xend = xmax,
@@ -1843,7 +1832,7 @@ make_summary_plots <- function(plot_category,
         colour = line_col,
         linewidth = 0.5
       ) +
-      annotate(
+      ggplot2::annotate(
         geom = "text",
         x = hormone_or_HFS_start_time,
         y = ymax + 0.06 * ymax,
@@ -1861,14 +1850,14 @@ make_summary_plots <- function(plot_category,
   # If plot_category = 1 or 3 (experiments involving HFS) add an annotation arrow at 5 minutes
   if (hormone_added == "HFS") {
     # Get limits of x- and y-axes
-    ymax <- layer_scales(treatment_plot)$y$get_limits()[2]
-    xmax <- layer_scales(treatment_plot)$x$get_limits()[2]
-    ymax2 <- layer_scales(treatment_plot)$y$get_limits()[2]
+    ymax <- ggplot2::layer_scales(treatment_plot)$y$get_limits()[2]
+    xmax <- ggplot2::layer_scales(treatment_plot)$x$get_limits()[2]
+    ymax2 <- ggplot2::layer_scales(treatment_plot)$y$get_limits()[2]
     
     # Add an arrow showing when HFS was applied (x = 5 min)
     treatment_plot <-
       treatment_plot +
-      annotate(
+      ggplot2::annotate(
         geom = "segment",
         x = hormone_or_HFS_start_time,
         y = ymax + 0.22 * ymax,
@@ -1880,7 +1869,7 @@ make_summary_plots <- function(plot_category,
     # Add "HFS" text label
     treatment_plot <-
       treatment_plot +
-      annotate(
+      ggplot2::annotate(
         geom = "text",
         x = hormone_or_HFS_start_time,
         y = ymax + 0.27 * ymax,
@@ -1895,9 +1884,9 @@ make_summary_plots <- function(plot_category,
     t_test_df <- get(paste0("t_test_", current_type, "_", parameter))
     
     treatment_plot <- treatment_plot +
-      geom_text(
-        data = t_test_df %>% filter(treatment == plot_treatment),
-        aes(
+      ggplot2::geom_text(
+        data = t_test_df %>% dplyr::filter(treatment == plot_treatment),
+        ggplot2::aes(
           x = asterisk_time,
           y = y_axis_limit - 50,
           label = significance_stars
@@ -1921,8 +1910,8 @@ make_summary_plots <- function(plot_category,
     # Category-[number]-[treatment]-Trace.png or a warning will display about a missing file
     # e.g. "Category-2-Control-Trace.png"
     
-    if (file.exists(here(representative_trace_file))) {
-      representative_trace <- png::readPNG(here(representative_trace_file)) %>% rasterGrob()
+    if (file.exists(here::here(representative_trace_file))) {
+      representative_trace <- png::readPNG(here::here(representative_trace_file)) %>% rasterGrob()
       
       treatment_plot <- treatment_plot +
         annotation_custom(
@@ -1934,7 +1923,7 @@ make_summary_plots <- function(plot_category,
         )
     } else {
       warning(
-        "The file here(Figures/Representative-Traces/Category-",
+        "The file here::here(Figures/Representative-Traces/Category-",
         plot_category,
         "-",
         plot_treatment,
@@ -1951,9 +1940,9 @@ make_summary_plots <- function(plot_category,
   }
   
   if (save_plot_pngs == "yes") {
-    ggsave(
+    ggplot2::ggsave(
       treatment_plot,
-      path = here(filepath),
+      path = here::here(filepath),
       file = paste0(
         "Summary-plot-",
         plot_treatment,
@@ -2003,13 +1992,13 @@ make_sEPSC_comparison_plot <-
     }
     
     plot_colour <- treatment_names_and_colours %>%
-      filter(treatment == plot_treatment) %>%
+      dplyr::filter(treatment == plot_treatment) %>%
       pull(colours)
     
     sEPSC_comparison_plot_data <- data %>%
-      filter(category == plot_category &
+      dplyr::filter(category == plot_category &
                treatment == plot_treatment) %>%
-      filter(interval == baseline_interval |
+      dplyr::filter(interval == baseline_interval |
                interval == post_hormone_interval)
     
     if (parameter == "raw_amplitude") {
@@ -2025,23 +2014,23 @@ make_sEPSC_comparison_plot <-
     }
     
     sEPSC_comparison_plot <- sEPSC_comparison_plot_data %>%
-      ggplot(aes(x = interval, y = .data[[y_var]])) +
-      labs(x = NULL, y = y_title) +
-      scale_x_discrete(labels = c("Baseline", hormone_added)) +
-      geom_violin(
+      ggplot2::ggplot(ggplot2::aes(x = interval, y = .data[[y_var]])) +
+      ggplot2::labs(x = NULL, y = y_title) +
+      ggplot2::scale_x_discrete(labels = c("Baseline", hormone_added)) +
+      ggplot2::geom_violin(
         fill = gray_shading_colour,
         color = NA,
         scale = "width",
         width = 0.2
       ) +
-      geom_sina(
+      ggforce::geom_sina(
         bw = 12,
         alpha = 0.8,
         maxwidth = 0.3,
         size = 2,
         color = plot_colour
       ) +
-      geom_signif(
+      ggsignif::geom_signif(
         comparisons = list(c(
           baseline_interval, post_hormone_interval
         )),
@@ -2053,27 +2042,27 @@ make_sEPSC_comparison_plot <-
         textsize = geom_signif_text_size,
         size = 0.4
       ) +
-      stat_summary(
+      ggplot2::stat_summary(
         fun.data = mean_se,
         geom = "pointrange",
         color = mean_point_colour,
         size = mean_point_size + 0.2,
         alpha = 0.8
       ) +
-      scale_y_continuous(expand = expansion(mult = c(0.2, .2)))
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0.2, .2)))
     
     if (large_axis_text == "yes") {
       sEPSC_comparison_plot <- sEPSC_comparison_plot +
-        theme(
-          axis.text.x = element_text(size = 24, margin = margin(t = 10)),
-          axis.title.y = element_text(size = 28, face = "plain")
+        ggplot2::theme(
+          axis.text.x = ggplot2::element_text(size = 24, margin = ggplot2::margin(t = 10)),
+          axis.title.y = ggplot2::element_text(size = 28, face = "plain")
         )
     }
     
     if (save_plot_pngs == "yes") {
-      ggsave(
+      ggplot2::ggsave(
         plot = sEPSC_comparison_plot,
-        path = here(
+        path = here::here(
           "Figures/Spontaneous-currents/Baseline-vs-post-hormone-comparisons"
         ),
         file = paste0(
@@ -2129,17 +2118,17 @@ make_facet_plot <-
     }
     
     plot_data <- data %>%
-      filter(treatment == plot_treatment &
+      dplyr::filter(treatment == plot_treatment &
                sex == plot_sex & category == plot_category)
     
     plot_colour <- treatment_names_and_colours %>%
-      filter(treatment == plot_treatment) %>%
+      dplyr::filter(treatment == plot_treatment) %>%
       pull(colours)
     
     
     plot <- plot_data %>%
-      ggplot(aes(x = time, {{ y_var }})) +
-      geom_point(color = plot_colour, size = if (pruned == "yes") {
+      ggplot2::ggplot(ggplot2::aes(x = time, {{ y_var }})) +
+      ggplot2::geom_point(color = plot_colour, size = if (pruned == "yes") {
         2.5
       } else {
         1.5
@@ -2147,13 +2136,13 @@ make_facet_plot <-
     
     if (pruned == "yes") {
       plot <- plot +
-        geom_hline(aes(yintercept = baseline_mean), linetype = "dashed")
+        ggplot2::geom_hline(ggplot2::aes(yintercept = baseline_mean), linetype = "dashed")
     }
     
     plot <- plot +
       modified_facet_theme +
-      facet_wrap(. ~ letter, ncol = 3, scales = "free_y") +
-      annotate(
+      ggplot2::facet_wrap(. ~ letter, ncol = 3, scales = "free_y") +
+      ggplot2::annotate(
         "segment",
         x = -Inf,
         xend = Inf,
@@ -2161,7 +2150,7 @@ make_facet_plot <-
         yend = -Inf,
         color = "gray"
       ) +
-      annotate(
+      ggplot2::annotate(
         "segment",
         x = -Inf,
         xend = -Inf,
@@ -2169,7 +2158,7 @@ make_facet_plot <-
         yend = Inf,
         color = "gray"
       ) +
-      labs(
+      ggplot2::labs(
         title = paste0(
           unique(plot_data$sex),
           "s, Treatment: ",
@@ -2192,7 +2181,7 @@ make_variance_df <- function(data,
                              post_hormone_interval) {
   if (include_all_treatments == "yes") {
     dataframe <- data %>%
-      filter(treatment %in% treatment_names_and_colours$treatment) %>%
+      dplyr::filter(treatment %in% treatment_names_and_colours$treatment) %>%
       droplevels()
     
     treatment_info <- treatment_names_and_colours
@@ -2233,32 +2222,32 @@ make_variance_df <- function(data,
     }
     
     dataframe <- data %>%
-      filter(treatment %in% list_of_treatments) %>%
+      dplyr::filter(treatment %in% list_of_treatments) %>%
       droplevels()
     
     treatment_info <- treatment_names_and_colours %>%
-      filter(treatment %in% list_of_treatments)
+      dplyr::filter(treatment %in% list_of_treatments)
   }
   
   
   
   variance_df <- dataframe %>%
-    filter(category == df_category) %>%
-    filter(interval == baseline_interval |
+    dplyr::filter(category == df_category) %>%
+    dplyr::filter(interval == baseline_interval |
              interval == post_hormone_interval) %>%
-    mutate(
-      state = case_when(
+    dplyr::mutate(
+      state = dplyr::case_when(
         interval == baseline_interval ~ "Baseline",
         interval == post_hormone_interval ~ "Post-modification",
         T ~ interval
       )
     ) %>%
-    group_by(treatment, state) %>%
-    mutate(
+    dplyr::group_by(treatment, state) %>%
+    dplyr::mutate(
       mean_cv_inverse_square = mean(cv_inverse_square),
       mean_VMR = mean(VMR)
     ) %>%
-    arrange(match(treatment, treatment_info$display_names))
+    dplyr::arrange(match(treatment, treatment_info$display_names))
   
   assign("variance_df", variance_df, envir = .GlobalEnv)
 }
@@ -2289,12 +2278,12 @@ make_variance_comparison_plot <- function(data,
   
   
   plot_colour <- treatment_names_and_colours %>%
-    filter(treatment == plot_treatment) %>%
+    dplyr::filter(treatment == plot_treatment) %>%
     pull(colours)
   
   variance_comparison_data <- data %>%
-    filter(category == plot_category) %>%
-    filter(treatment == plot_treatment)
+    dplyr::filter(category == plot_category) %>%
+    dplyr::filter(treatment == plot_treatment)
   
   allowed_parameters_list <- "\"cv\" or \"VMR\""
   
@@ -2306,9 +2295,9 @@ make_variance_comparison_plot <- function(data,
   
   if (variance_measure == "cv") {
     variance_comparison_plot <- variance_comparison_data %>%
-      ggplot(aes(x = interval, y = cv_inverse_square, group = letter)) +
-      labs(y = "1/CV<sup>2</sup>") +
-      geom_signif(
+      ggplot2::ggplot(ggplot2::aes(x = interval, y = cv_inverse_square, group = letter)) +
+      ggplot2::labs(y = "1/CV<sup>2</sup>") +
+      ggsignif::geom_signif(
         comparisons = list(c(
           baseline_interval, post_hormone_interval
         )),
@@ -2320,14 +2309,14 @@ make_variance_comparison_plot <- function(data,
         textsize = geom_signif_text_size,
         size = 0.4
       ) +
-      scale_y_continuous(expand = expansion(mult = c(0.2, .2)))
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0.2, .2)))
   }
   
   if (variance_measure == "VMR") {
     variance_comparison_plot <- variance_comparison_data %>%
-      ggplot(aes(x = interval, y = VMR, group = letter)) +
-      labs(y = "VMR") +
-      geom_signif(
+      ggplot2::ggplot(ggplot2::aes(x = interval, y = VMR, group = letter)) +
+      ggplot2::labs(y = "VMR") +
+      ggsignif::geom_signif(
         comparisons = list(c(
           baseline_interval, post_hormone_interval
         )),
@@ -2339,19 +2328,19 @@ make_variance_comparison_plot <- function(data,
         textsize = geom_signif_text_size,
         size = 0.4
       ) +
-      scale_y_continuous(expand = expansion(mult = c(0.2, .2)))
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0.2, .2)))
   }
   
   variance_comparison_plot <- variance_comparison_plot +
-    geom_point(color = connecting_line_colour_aps, size = 1.8) +
-    geom_line(color = connecting_line_colour_aps, linewidth = 0.4) +
-    labs(x = NULL) +
-    scale_x_discrete(labels = c("Baseline", "Post-modification")) +
-    theme(axis.title.y = element_markdown(family = plot_font_family))
+    ggplot2::geom_point(color = connecting_line_colour_aps, size = 1.8) +
+    ggplot2::geom_line(color = connecting_line_colour_aps, linewidth = 0.4) +
+    ggplot2::labs(x = NULL) +
+    ggplot2::scale_x_discrete(labels = c("Baseline", "Post-modification")) +
+    ggplot2::theme(axis.title.y = ggtext::element_markdown(family = plot_font_family))
   
   if (variance_measure == "cv") {
     variance_comparison_plot <- variance_comparison_plot +
-      annotate(
+      ggplot2::annotate(
         geom = "segment",
         x = baseline_interval,
         xend = post_hormone_interval,
@@ -2360,14 +2349,14 @@ make_variance_comparison_plot <- function(data,
         color = plot_colour,
         linewidth = 1.2
       ) +
-      annotate(
+      ggplot2::annotate(
         geom = "point",
         x = baseline_interval,
         y = variance_comparison_data$mean_cv_inverse_square[variance_comparison_data$interval == baseline_interval][1],
         color = plot_colour,
         size = 2.5
       ) +
-      annotate(
+      ggplot2::annotate(
         geom = "point",
         x = post_hormone_interval,
         y = variance_comparison_data$mean_cv_inverse_square[variance_comparison_data$interval == post_hormone_interval][1],
@@ -2378,7 +2367,7 @@ make_variance_comparison_plot <- function(data,
   
   if (variance_measure == "VMR") {
     variance_comparison_plot <- variance_comparison_plot +
-      annotate(
+      ggplot2::annotate(
         geom = "segment",
         x = baseline_interval,
         xend = post_hormone_interval,
@@ -2387,14 +2376,14 @@ make_variance_comparison_plot <- function(data,
         color = plot_colour,
         linewidth = 1.2
       ) +
-      annotate(
+      ggplot2::annotate(
         geom = "point",
         x = baseline_interval,
         y = variance_comparison_data$mean_VMR[variance_comparison_data$interval == baseline_interval][1],
         color = plot_colour,
         size = 2.5
       ) +
-      annotate(
+      ggplot2::annotate(
         geom = "point",
         x = post_hormone_interval,
         y = variance_comparison_data$mean_VMR[variance_comparison_data$interval == post_hormone_interval][1],
@@ -2406,9 +2395,9 @@ make_variance_comparison_plot <- function(data,
   
   if (large_axis_text == "yes") {
     variance_comparison_plot <- variance_comparison_plot +
-      theme(
-        axis.text.x = element_text(size = 24, margin = margin(t = 10)),
-        axis.title.y = element_markdown(
+      ggplot2::theme(
+        axis.text.x = ggplot2::element_text(size = 24, margin = ggplot2::margin(t = 10)),
+        axis.title.y = ggtext::element_markdown(
           size = 28,
           face = "plain",
           family = plot_font_family
@@ -2417,9 +2406,9 @@ make_variance_comparison_plot <- function(data,
   }
   
   if (save_plot_pngs == "yes") {
-    ggsave(
+    ggplot2::ggsave(
       plot = variance_comparison_plot,
-      path = here("Figures/Evoked-currents/CV"),
+      path = here::here("Figures/Evoked-currents/CV"),
       file = paste0(
         "Variance-comparison-category-",
         plot_category,
@@ -2466,19 +2455,19 @@ make_variance_comparison_plot <- function(data,
 
 make_cv_plot <- function(data, plot_treatment = "Control") {
   plot_colour <- treatment_names_and_colours %>%
-    filter(treatment == plot_treatment) %>%
+    dplyr::filter(treatment == plot_treatment) %>%
     pull(colours)
   
   cv_plot <- data %>%
-    filter(treatment == plot_treatment) %>%
-    ggplot(aes(x = time, y = cv_P1_all_cells)) +
-    geom_point(color = plot_colour) +
-    labs(x = "Time (min)", y = "CV")
+    dplyr::filter(treatment == plot_treatment) %>%
+    ggplot2::ggplot(ggplot2::aes(x = time, y = cv_P1_all_cells)) +
+    ggplot2::geom_point(color = plot_colour) +
+    ggplot2::labs(x = "Time (min)", y = "CV")
   
   if (save_plot_pngs == "yes") {
-    ggsave(
+    ggplot2::ggsave(
       plot = cv_plot,
-      path = here("Figures/Evoked-currents/CV"),
+      path = here::here("Figures/Evoked-currents/CV"),
       file = paste0("CV_plot", plot_treatment, ".png"),
       width = 7,
       height = 5,
@@ -2500,7 +2489,7 @@ make_PPR_before_vs_post_hormone_data <- function(data,
                                                  post_hormone_interval) {
   if (include_all_treatments == "yes") {
     dataframe <- data %>%
-      filter(treatment %in% treatment_names_and_colours$treatment) %>%
+      dplyr::filter(treatment %in% treatment_names_and_colours$treatment) %>%
       droplevels()
     
     treatment_info <- treatment_names_and_colours
@@ -2531,25 +2520,25 @@ make_PPR_before_vs_post_hormone_data <- function(data,
     }
     
     dataframe <- data %>%
-      filter(treatment %in% list_of_treatments) %>%
+      dplyr::filter(treatment %in% list_of_treatments) %>%
       droplevels()
     
     treatment_info <- treatment_names_and_colours %>%
-      filter(treatment %in% list_of_treatments)
+      dplyr::filter(treatment %in% list_of_treatments)
   }
   
   PPR_df <- dataframe %>%
-    filter(PPR < PPR_max & PPR > PPR_min) %>%
-    filter(interval == baseline_interval |
+    dplyr::filter(PPR < PPR_max & PPR > PPR_min) %>%
+    dplyr::filter(interval == baseline_interval |
              interval == post_hormone_interval) %>%
-    mutate(
-      state = case_when(
+    dplyr::mutate(
+      state = dplyr::case_when(
         interval == baseline_interval ~ "Baseline",
         interval == post_hormone_interval ~ "Post-modification",
         T ~ interval
       )
     ) %>%
-    arrange(match(treatment, treatment_info$display_names))
+    dplyr::arrange(match(treatment, treatment_info$display_names))
   assign("PPR_before_vs_post_hormone_data", PPR_df, envir = .GlobalEnv)
 }
 
@@ -2601,46 +2590,46 @@ make_PPR_plot_single_treatment <- function(data,
   }
   
   plot_colour <- treatment_names_and_colours %>%
-    filter(treatment == plot_treatment) %>%
+    dplyr::filter(treatment == plot_treatment) %>%
     pull(colours)
   
   
   PPR_single_plot <- data %>%
-    filter(treatment == plot_treatment) %>%
-    filter(category == plot_category) %>%
-    mutate(state = case_match(state,
+    dplyr::filter(treatment == plot_treatment) %>%
+    dplyr::filter(category == plot_category) %>%
+    dplyr::mutate(state = case_match(state,
                               "Baseline" ~ baseline_label,
                               "Post-modification" ~ post_modification_label)) %>% 
-    group_by(treatment, state, letter, sex) %>%
-    summarise(mean_PPR_cell = mean(PPR), .groups = "drop") %>%
-    ggplot(aes(x = state, y = mean_PPR_cell, shape = sex)) +
-    geom_point(
+    dplyr::group_by(treatment, state, letter, sex) %>%
+    dplyr::summarize(mean_PPR_cell = mean(PPR), .groups = "drop") %>%
+    ggplot2::ggplot(ggplot2::aes(x = state, y = mean_PPR_cell, shape = sex)) +
+    ggplot2::geom_point(
       size = 4,
       color = plot_colour,
-      position = position_jitter(width = 0.04, height = 0),
+      position = ggplot2::position_jitter(width = 0.04, height = 0),
       alpha = 0.8
     ) +
-    geom_line(
-      aes(group = letter),
+    ggplot2::geom_line(
+      ggplot2::aes(group = letter),
       color = plot_colour,
       linewidth = connecting_line_width_PPR,
       alpha = 0.3
     ) +
-    stat_summary(
+    ggplot2::stat_summary(
       fun.data = "mean_se",
       geom = "pointrange",
       color = mean_point_colour,
       size = mean_point_size + 0.2,
       alpha = 1,
-      position = position_nudge(x = -0.04),
+      position = ggplot2::position_nudge(x = -0.04),
       show.legend = FALSE
     ) +
-    theme(legend.position = "right") +
-    coord_cartesian(ylim = c(0, 3)) +
-    theme(axis.text.x = element_text(margin = margin(b = 5, t = 5))) +
-    labs(x = NULL, y = "Paired pulse ratio", shape = NULL) +
-    scale_shape_manual(values = c(female_shape, male_shape)) +
-    geom_signif(
+    ggplot2::theme(legend.position = "right") +
+    ggplot2::coord_cartesian(ylim = c(0, 3)) +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(margin = ggplot2::margin(b = 5, t = 5))) +
+    ggplot2::labs(x = NULL, y = "Paired pulse ratio", shape = NULL) +
+    ggplot2::scale_shape_manual(values = c(female_shape, male_shape)) +
+    ggsignif::geom_signif(
       comparisons = list(c(baseline_label, post_modification_label)),
       test = "t.test",
       test.args = list(paired = TRUE),
@@ -2654,19 +2643,19 @@ make_PPR_plot_single_treatment <- function(data,
 
   if (large_axis_text == "yes") {
     PPR_single_plot <- PPR_single_plot +
-      theme(
-        axis.text.x = element_text(size = 24, margin = margin(t = 10)),
-        axis.title.y = element_text(size = 28, face = "plain"),
-        legend.text = element_text(size = 18),
+      ggplot2::theme(
+        axis.text.x = ggplot2::element_text(size = 24, margin = ggplot2::margin(t = 10)),
+        axis.title.y = ggplot2::element_text(size = 28, face = "plain"),
+        legend.text = ggplot2::element_text(size = 18),
         legend.key.spacing.y = unit(0.5, "cm")
       )
   }
 
 
   if (save_plot_pngs == "yes") {
-    ggsave(
+    ggplot2::ggsave(
       plot = PPR_single_plot,
-      path = here("Figures/Evoked-currents/PPR"),
+      path = here::here("Figures/Evoked-currents/PPR"),
       file = paste0("PPR_comparison-", plot_treatment, ".png"),
       width = 7,
       height = 5,
@@ -2724,7 +2713,7 @@ make_PPR_plot_multiple_treatments <- function(data,
   if (include_all_treatments == "yes") {
     treatment_info <- treatment_names_and_colours
     plot_data <- data %>%
-      filter(treatment %in% treatment_names_and_colours$treatment) %>%
+      dplyr::filter(treatment %in% treatment_names_and_colours$treatment) %>%
       droplevels()
     
     if (!is.null(list_of_treatments)) {
@@ -2753,36 +2742,36 @@ make_PPR_plot_multiple_treatments <- function(data,
     }
     
     treatment_info <- treatment_names_and_colours %>%
-      filter(treatment %in% list_of_treatments)
+      dplyr::filter(treatment %in% list_of_treatments)
     plot_data <- data %>%
-      filter(treatment %in% list_of_treatments) %>%
+      dplyr::filter(treatment %in% list_of_treatments) %>%
       droplevels()
   }
   
   PPR_summary_plot <- plot_data %>%
-    filter(category == plot_category) %>%
-    mutate(
+    dplyr::filter(category == plot_category) %>%
+    dplyr::mutate(
       state = case_match(state, "Baseline" ~ baseline_label, "Post-modification" ~ post_modification_label),
-      treatment = str_replace_all(
+      treatment = stringr::str_replace_all(
         treatment,
         setNames(treatment_info$display_names, treatment_info$treatment)
       ),
       treatment = factor(treatment, levels = treatment_info$display_names)
     ) %>%
-    group_by(treatment, state, letter, sex) %>%
-    summarize(mean_PPR = mean(PPR)) %>%
-    ungroup() %>%
-    ggplot(aes(x = state, y = mean_PPR)) +
-    geom_point(
-      aes(color = treatment),
+    dplyr::group_by(treatment, state, letter, sex) %>%
+    dplyr::summarize(mean_PPR = mean(PPR)) %>%
+    dplyr::ungroup() %>%
+    ggplot2::ggplot(ggplot2::aes(x = state, y = mean_PPR)) +
+    ggplot2::geom_point(
+      ggplot2::aes(color = treatment),
       size = 2,
-      position = position_jitter(0.01),
+      position = ggplot2::position_jitter(0.01),
       alpha = 0.9
     ) +
-    geom_line(aes(color = treatment, group = letter),
+    ggplot2::geom_line(ggplot2::aes(color = treatment, group = letter),
               linewidth = connecting_line_width_PPR,
               alpha = 0.3) +
-    geom_signif(
+    ggsignif::geom_signif(
       comparisons = list(c(baseline_label, post_modification_label)),
       test = "t.test",
       test.args = list(paired = TRUE),
@@ -2799,28 +2788,28 @@ make_PPR_plot_multiple_treatments <- function(data,
       ncol = length(treatment_info$treatment),
       strip.position = "bottom"
     ) +
-    scale_color_manual(breaks = treatment_info$display_names,
+    ggplot2::scale_color_manual(breaks = treatment_info$display_names,
                        values = treatment_info$colours) +
-    theme(
-      strip.text = element_text(size = 10),
+    ggplot2::theme(
+      strip.text = ggplot2::element_text(size = 10),
       strip.placement = "outside",
       panel.spacing.x = unit(2, "mm"),
       legend.position = "none"
     ) +
-    stat_summary(
+    ggplot2::stat_summary(
       fun.data = "mean_se",
       geom = "pointrange",
       color = mean_point_colour,
       size = mean_point_size + 0.25,
       alpha = 0.9
     ) +
-    labs(x = NULL, y = "Paired pulse ratio") +
-    scale_y_continuous(expand = expansion(mult = c(0.2, .2)))
+    ggplot2::labs(x = NULL, y = "Paired pulse ratio") +
+    ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0.2, .2)))
   
   if (save_plot_pngs == "yes") {
-    ggsave(
+    ggplot2::ggsave(
       plot = PPR_summary_plot,
-      path = here("Figures/Evoked-currents/PPR"),
+      path = here::here("Figures/Evoked-currents/PPR"),
       file = paste0("PPR_Summary_plot.png"),
       width = 7,
       height = 5,
@@ -2831,8 +2820,10 @@ make_PPR_plot_multiple_treatments <- function(data,
   PPR_summary_plot
 }
 
+
+#import_ABF_file DONE ------
 #' Read and plot raw .abf files ----
-#' `import_ABF_file()` is a wrapper around `abf2_load()` from `abftools::read_abf()`. It converts the array from `abf2_load()`
+#' `import_ABF_file()` is a wrapper around `abftools::abf2_load()` and `abftools::MeltAbf()`. It converts the array from `abftools::abf2_load()`
 #' into a dataframe, and it also converts time to minutes
 #' 
 #' @param file_name Filepath to an .abf file
@@ -2846,120 +2837,148 @@ make_PPR_plot_multiple_treatments <- function(data,
 
 import_ABF_file <-
   function(file_name) {
-    abf2_load(here(file_name)) %>%
-      MeltAbf() %>%
-      rename("current" = chan1, "voltage" = chan2) %>%
-      rename_with(tolower) %>%
-      mutate(time_min = time / 10000)
+    abftools::abf2_load(here::here(file_name)) %>%
+      abftools::MeltAbf() %>%
+      dplyr::rename("current" = chan1, "voltage" = chan2) %>%
+      dplyr::rename_with(tolower) %>%
+      dplyr::mutate(time_min = time / 10000)
   }
 
 
+import_ABF_file_from_package <- function(file_name) {
+  abftools::abf2_load(here::here(file_name)) %>%
+    abftools::MeltAbf() %>%
+    dplyr::rename("current" = .data$chan1, "voltage" = .data$chan2) %>%
+    dplyr::rename_with(tolower) %>%
+    dplyr::mutate(time_sec = .data$time / 10000,
+                  time_ms = time_sec/1000) %>%
+    invisible()
+}
 
-# TODO: add more time flexibility for the representative trace - and add this to @params------
-# TODO: Add more flexibility for the scale bar, and add this to @params
+
 #' Plot a representative spontaneous current trace
-#' 
-#' `make_representative_sp_trace()` generates a plot of current amplitude over time for a specified sweep from an ABF file.
-#' It requires a dataframe generated from raw .abf data with [import_ABF_file()]. The function returns a ggplot object
-#' with an optional scale bar.
-#' 
-#' @param recording_name A dataframe containing at least these columns: `time`, `episode`, `current`, `voltage`, `time_min`.
-#' An easy way to obtain this is by importing a raw .abf file through the [import_ABF_file()] function.
-#' @param plot_treatment The treatment applied during this recording. This is required to pull the corresponding treatment colour from the `treatment_names_and_colours` dataframe.
-#' @param is_baseline A character value that will use the baseline colour (`baseline_group_colour`) if set to "yes". If not, the plot colour is the treatment colour.
-#' @param include_scale_bar A character value that determines if a scale bar will be added to the plot. Allowed values are "yes" and "no".
-#' @param plot_episode A character value describing the sweep (e.g. `epi1`) that will be used for the plot.
-#' 
-#' 
-#' @returns A ggplot object. If save_plot_PNGs is defined as "yes" in the Global Environment, it will also generate a .png file in the folder `Figures/Spontaneous-currents/Representative-Traces` relative to the project directory.
-#' 
-#' `Figures/Spontaneous-currents/Representative-Traces`
+#'
+#' `make_representative_sp_trace()` generates a plot of raw current amplitude
+#' over time for a specified sweep from an ABF file. It requires a dataframe
+#' generated from raw .abf data with [import_ABF_file()]. The function returns a
+#' ggplot object with an optional scale bar.
+#'
+#' @param recording_name A dataframe containing at least these columns: `time`,
+#'   `episode`, `current`, `voltage`, `time_sec`. An easy way to obtain this is
+#'   by importing a raw .abf file through the [import_ABF_file()] function.
+#' @param include_scale_bar A character value that determines if a scale bar
+#'   will be added to the plot. Allowed values are "yes" and "no".
+#' @param plot_episode A character value describing the sweep (e.g. `epi1`) that
+#'   will be used for the plot.
+#' @param scale_bar_x_start A numeric value describing the x-axis position of
+#'   the scale bar.
+#' @param scale_bar_x_length A numeric value describing the horizontal span (in
+#'   seconds) of the scale bar. This will automatically be converted and
+#'   displayed in milliseconds.
+#' @param scale_bar_y_start A numeric value describing the y-axis position of
+#'   the scale bar.
+#' @param scale_bar_y_length A numeric value describing the vertical span (in
+#'   pA) of the scale bar.
+#' @param plot_colour A character value naming the colour of the plot.
+#' @param plot_x_min A numeric value describing the minimum value on the x-axis
+#'   (in seconds).
+#' @param plot_x_max A numeric value describing the maximum value on the x-axis
+#'   (in seconds).
+#' @param plot_y_min A numeric value describing the minimum value on the y-axis
+#'   (in pA).
+#' @param plot_y_max A numeric value describing the maximum value on the y-axis
+#'   (in pA).
+#'
+#' @returns A ggplot object. If save_plot_PNGs is defined as "yes" in the Global
+#'   Environment, it will also generate a .png file in the folder
+#'   `Figures/Spontaneous-currents/Representative-Traces` relative to the
+#'   project directory.
+#'
+#'   `Figures/Spontaneous-currents/Representative-Traces`
 #' 
 #' @export
 #' 
 #' @examples
 #' make_representative_sp_trace(
-#'   recording_name = BN_baseline,
-#'   plot_treatment = "Control",
-#'   is_baseline = "yes",
-#'   include_scale_bar = "yes",
-#'   plot_episode = "epi1"
+#'  recording_name = BN_baseline,
+#'  plot_colour = "#6600cc",
+#'  include_scale_bar = "yes",
+#'  plot_episode = "epi1",
+#'  scale_bar_x_length = 1,
+#'  scale_bar_y_length = 10,
+#'  plot_x_min = 1,
+#'  plot_x_max = 3
 #' )
 #' 
 
 make_representative_sp_trace <-
   function(recording_name,
-           plot_treatment,
-           is_baseline = "yes",
+           plot_colour,
            include_scale_bar = "yes",
-           plot_episode = "epi1") {
-    
-    if (!is_baseline %in% c("yes", "no")) {
-      stop("'is_baseline' argument must be one of: 'yes' or 'no'")
-    }
-    
+           plot_episode = "epi1",
+           scale_bar_x_start = 1.25,
+           scale_bar_x_length = 0.5,
+           scale_bar_y_start = 15,
+           scale_bar_y_length = 20,
+           plot_x_min = 1,
+           plot_x_max = 5,
+           plot_y_min = -100,
+           plot_y_max = 35) {
     if (!include_scale_bar %in% c("yes", "no")) {
       stop("'include_scale_bar' argument must be one of: 'yes' or 'no'")
     }
     
-    if (is_baseline == "no") {
-      plot_colour <- treatment_names_and_colours %>%
-        filter(treatment == plot_treatment) %>%
-        pull(colours)
-    } else {
-      plot_colour <- baseline_group_colour
-    }
-    
     representative_traces_plot <- recording_name %>%
-      filter(episode == plot_episode) %>%
-      filter(between(time_min, 1, 5)) %>%
-      ggplot(aes(x = time_min, y = current)) +
-      coord_cartesian(ylim = c(-100, 35)) +
-      geom_line(color = plot_colour) +
+      dplyr::filter(episode == plot_episode) %>%
+      dplyr::filter(between(time_sec, plot_x_min, plot_x_max)) %>%
+      ggplot2::ggplot(ggplot2::aes(x = time_sec, y = current)) +
+      ggplot2::coord_cartesian(ylim = c(plot_y_min, plot_y_max)) +
+      ggplot2::geom_line(color = plot_colour) +
       theme_void()
     
+    scale_bar_x_length_in_ms <- scale_bar_x_length*1000
     
     if (include_scale_bar == "yes") {
       representative_traces_plot <- representative_traces_plot +
-        annotate(
+        ggplot2::annotate(
           "segment",
-          x = 1.25,
-          xend = 1.75,
-          y = 15,
-          yend = 15,
+          x = scale_bar_x_start,
+          xend = scale_bar_x_start + scale_bar_x_length,
+          y = scale_bar_y_start,
+          yend = scale_bar_y_start,
           lwd = 0.4
         ) +
-        annotate(
+        ggplot2::annotate(
           "segment",
-          x = 1.25,
-          xend = 1.25,
-          y = 15,
-          yend = 35,
+          x = scale_bar_x_start,
+          xend = scale_bar_x_start,
+          y = scale_bar_y_start,
+          yend = scale_bar_y_start + scale_bar_y_length,
           lwd = 0.4
         ) +
-        annotate(
+        ggplot2::annotate(
           "text",
-          x = 1.20,
-          y = 25,
-          label = "20 pA",
+          x = scale_bar_x_start - (plot_x_max - plot_x_min)/100,
+          y = scale_bar_y_start + 0.5*scale_bar_y_length,
+          label = paste0(scale_bar_y_length, " pA"),
           hjust = 1,
           vjust = 0.5,
           family = plot_font_family
         ) +
-        annotate(
+        ggplot2::annotate(
           "text",
-          x = 1.5,
-          y = 10,
-          label = "30 s",
+          x = scale_bar_x_start + 0.5*scale_bar_x_length,
+          y = scale_bar_y_start - 5,
+          label = paste0(scale_bar_x_length_in_ms, " ms"),
           hjust = 0.5,
           family = plot_font_family
         )
     }
     
     if (save_plot_pngs == "yes") {
-      ggsave(
+      ggplot2::ggsave(
         plot = representative_traces_plot,
-        path = here("Figures/Spontaneous-currents/Representative-Traces"),
+        path = here::here("Figures/Spontaneous-currents/Representative-Traces"),
         file = paste0(substitute(recording_name), ".png"),
         width = 7,
         height = 5,
@@ -2976,25 +2995,25 @@ make_representative_sp_trace <-
 
 perform_AP_frequency_wilcox_test <- function(category, treatment) {
   ap_frequency_wilcox_test_full <- full_ap_df %>%
-    filter(category == category) %>%
-    filter(treatment == treatment) %>%
-    select(letter,
+    dplyr::filter(category == category) %>%
+    dplyr::filter(treatment == treatment) %>%
+    dplyr::select(letter,
            State,
            AP_frequency,
            Current_injection,
            category,
            treatment) %>%
-    group_by(Current_injection) %>%
-    wilcox_test(
+    dplyr::group_by(Current_injection) %>%
+    rstatix::wilcox_test(
       AP_frequency ~ State,
       ref.group = "Baseline",
       paired = T,
       p.adjust.method = "holm"
     ) %>%
-    mutate(
+    dplyr::mutate(
       statistic = round(statistic, 2),
-      p_string = pvalString(p),
-      significance_stars = case_when(
+      p_string = lazyWeave::pvalString(p),
+      significance_stars = dplyr::case_when(
         p == NA ~ "",
         p > 0.05 ~ "",
         0.01 < p & p < 0.05 ~ "*",
@@ -3005,8 +3024,8 @@ perform_AP_frequency_wilcox_test <- function(category, treatment) {
     ) %>% merge(
       .,
       max_mean_AP_frequencies %>%
-        filter(category == category) %>%
-        filter(treatment == treatment),
+        dplyr::filter(category == category) %>%
+        dplyr::filter(treatment == treatment),
       by = "Current_injection"
     )
   
@@ -3029,9 +3048,9 @@ make_AP_frequency_plot_single_treatment <- function(data,
                                                     signif_stars = "no",
                                                     large_axis_text) {
   single_treatment_AP_plot <- data %>%
-    filter(treatment == treatment) %>%
+    dplyr::filter(treatment == treatment) %>%
     ggplot(
-      aes(
+      ggplot2::aes(
         x = Current_injection,
         y = mean_AP_frequency,
         ymin = mean_AP_frequency - SE,
@@ -3039,45 +3058,45 @@ make_AP_frequency_plot_single_treatment <- function(data,
         color = State
       )
     ) +
-    geom_pointrange(size = 1, linewidth = 0.6) +
-    labs(x = "Current Injection (pA)", y = "AP Frequency (Hz)", color = NULL) +
-    scale_color_manual(
+    ggplot2::geom_pointrange(size = 1, linewidth = 0.6) +
+    ggplot2::labs(x = "Current Injection (pA)", y = "AP Frequency (Hz)", color = NULL) +
+    ggplot2::scale_color_manual(
       values = c(baseline_group_colour, my_colours[colour_choice]),
       labels = c(
         paste0(
           "Baseline, n = ",
           ap_plot_counts %>%
-            filter(treatment == treatment & State == "Baseline") %>%
+            dplyr::filter(treatment == treatment & State == "Baseline") %>%
             pull(n)
         ),
         paste0(
           hormone_added,
           ", n = ",
           ap_plot_counts %>%
-            filter(treatment == treatment & State == "Insulin") %>%
+            dplyr::filter(treatment == treatment & State == "Insulin") %>%
             pull(n)
         )
       )
     ) +
-    theme(
+    ggplot2::theme(
       legend.position = "inside",
       legend.position.inside = c(0.14, 0.8),
       legend.key.spacing.y = unit(1.5, "lines"),
-      axis.title = element_text(face = "plain")
+      axis.title = ggplot2::element_text(face = "plain")
     ) +
-    scale_y_continuous(expand = expansion(mult = c(0.1, .1)))
+    ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0.1, .1)))
   
   
   if (large_axis_text == "yes") {
     single_treatment_AP_plot <- single_treatment_AP_plot +
-      theme(
-        axis.title.x = element_text(
+      ggplot2::theme(
+        axis.title.x = ggplot2::element_text(
           size = 28,
           face = "plain",
-          margin = margin(t = 10)
+          margin = ggplot2::margin(t = 10)
         ),
-        axis.title.y = element_text(size = 28, face = "plain"),
-        legend.text = element_text(size = 18),
+        axis.title.y = ggplot2::element_text(size = 28, face = "plain"),
+        legend.text = ggplot2::element_text(size = 18),
         legend.position.inside = c(0.24, 0.8),
         legend.key.spacing.y = unit(0.5, "cm")
       )
@@ -3086,9 +3105,9 @@ make_AP_frequency_plot_single_treatment <- function(data,
   
   if (signif_stars == "yes") {
     single_treatment_AP_plot <- single_treatment_AP_plot +
-      geom_text(
-        data = ap_frequency_wilcox_test_all_treatments %>% filter(treatment == treatment),
-        aes(
+      ggplot2::geom_text(
+        data = ap_frequency_wilcox_test_all_treatments %>% dplyr::filter(treatment == treatment),
+        ggplot2::aes(
           x = Current_injection,
           y = max_AP_frequency + max_se + 1,
           label = significance_stars
@@ -3101,9 +3120,9 @@ make_AP_frequency_plot_single_treatment <- function(data,
   
   
   if (save_plot_pngs == "yes") {
-    ggsave(
+    ggplot2::ggsave(
       plot = single_treatment_AP_plot,
-      path = here("Figures/Action-potentials"),
+      path = here::here("Figures/Action-potentials"),
       file = paste0("Action-potential-comparison-", treatment, ".png"),
       width = 7,
       height = 5,
@@ -3119,7 +3138,7 @@ make_AP_frequency_plot_single_treatment <- function(data,
 make_AP_plot <-
   function(data, y, y_axis_title) {
     data %>%
-      ggplot(aes(
+      ggplot2::ggplot(ggplot2::aes(
         x = State,
         y = {
           {
@@ -3129,25 +3148,25 @@ make_AP_plot <-
         color = State,
         shape = State
       )) +
-      geom_line(aes(group = letter), linewidth = connecting_line_width, color = connecting_line_colour_aps) +
-      geom_point(alpha = 0.8,
+      ggplot2::geom_line(ggplot2::aes(group = letter), linewidth = connecting_line_width, color = connecting_line_colour_aps) +
+      ggplot2::geom_point(alpha = 0.8,
                  size = geom_sina_size,
-                 position = position_jitter(0.02)) +
-      #geom_sina(bw = 7, alpha = 0.8, maxwidth = 0.25, size = geom_sina_size) +
-      scale_color_manual(values = c(baseline_group_colour, insulin_group_colour)) +
-      stat_summary(
+                 position = ggplot2::position_jitter(0.02)) +
+      #ggforce::geom_sina(bw = 7, alpha = 0.8, maxwidth = 0.25, size = geom_sina_size) +
+      ggplot2::scale_color_manual(values = c(baseline_group_colour, insulin_group_colour)) +
+      ggplot2::stat_summary(
         fun.data = mean_se,
         geom = "pointrange",
         color = mean_point_colour,
         size = mean_point_size
       ) +
-      theme(
+      ggplot2::theme(
         legend.position = "none",
-        axis.line = element_line(linewidth = 0.4),
-        axis.title = element_text(face = "plain")
+        axis.line = ggplot2::element_line(linewidth = 0.4),
+        axis.title = ggplot2::element_text(face = "plain")
       ) +
-      labs(x = NULL, y = y_axis_title) +
-      geom_signif(
+      ggplot2::labs(x = NULL, y = y_axis_title) +
+      ggsignif::geom_signif(
         comparisons = list(c("Baseline", "Insulin")),
         test = "wilcox.test",
         test.args = list(paired = TRUE),
@@ -3157,14 +3176,14 @@ make_AP_plot <-
         textsize = geom_signif_text_size,
         size = 0.4
       ) +
-      scale_y_continuous(expand = expansion(mult = c(0.2, .2)))
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0.2, .2)))
   }
 
 
 save_AP_plot <- function(ap_plot, plot_name) {
-  ggsave(
+  ggplot2::ggsave(
     plot = ap_plot,
-    path = here("Figures/Action-potentials"),
+    path = here::here("Figures/Action-potentials"),
     file = paste0(plot_name, "-summary-plot.png"),
     width = 7,
     height = 5,
@@ -3175,29 +3194,29 @@ save_AP_plot <- function(ap_plot, plot_name) {
 
 
 make_qq_plot <- function(data, parameter_title, parameter) {
-  ggplot(data, aes(sample = {
+  ggplot(data, ggplot2::aes(sample = {
     {
       parameter
     }
   })) +
-    stat_qq() +
-    stat_qq_line() +
-    labs(title = glue("QQ-Plot for {parameter_title}"))
+    ggplot2::stat_qq() +
+    ggplot2::stat_qq_line() +
+    ggplot2::labs(title = glue("QQ-Plot for {parameter_title}"))
 }
 
-# coord_cartesian() is required to lock' the coordinates of all AP traces to the same scales
+# ggplot2::coord_cartesian() is required to lock' the coordinates of all AP traces to the same scales
 make_AP_trace_plot <-
   function(file_ID, sweep1, sweep2, trace_color) {
-    abf2_load(here(paste0("Data/ABF-Files/", file_ID, ".abf"))) %>%
-      MeltAbf() %>%
-      rename("Voltage" = chan1, "Current" = chan2) %>%
-      filter(Episode %in% c(sweep1, sweep2)) %>%
-      ggplot(aes(x = time, y = Voltage, group = Episode)) +
-      geom_line(color = trace_color, linewidth = AP_trace_size) +
-      labs(x = NULL, y = NULL) +
-      coord_cartesian(
+    abftools::abf2_load(here::here(paste0("Data/ABF-Files/", file_ID, ".abf"))) %>%
+      abftools::MeltAbf() %>%
+      dplyr::rename("Voltage" = chan1, "Current" = chan2) %>%
+      dplyr::filter(Episode %in% c(sweep1, sweep2)) %>%
+      ggplot2::ggplot(ggplot2::aes(x = time, y = Voltage, group = Episode)) +
+      ggplot2::geom_line(color = trace_color, linewidth = AP_trace_size) +
+      ggplot2::labs(x = NULL, y = NULL) +
+      ggplot2::coord_cartesian(
         xlim  = c(ap_traces_x_min, ap_traces_x_max),
         ylim = c(ap_traces_y_min, ap_traces_y_max)
       ) +
       theme_void()
-  }
+    }

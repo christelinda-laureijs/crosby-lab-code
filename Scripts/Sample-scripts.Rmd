@@ -61,7 +61,7 @@ add_new_cells(new_raw_data_csv = "____.csv",
 
 
 ```{r read-eEPSC-data, include=F}
-make_normalized_EPSC_data(filename = "Data/Sample-eEPSC-data.csv",
+raw_eEPSC_df <- make_normalized_EPSC_data(filename = "Data/Sample-eEPSC-data.csv",
                           current_type = "eEPSC",
                           min_time_value = 0,
                           max_time_value = 25,
@@ -106,7 +106,7 @@ make_baseline_comparison_plot(
   current_type = "eEPSC",
   parameter = "raw_amplitude",
   baseline_interval = "t0to5",
-  large_axis_text = "yes",
+  large_axis_text = "no",
   plot_width = 8
 )
 ```
@@ -428,18 +428,26 @@ eEPSC_cv_plots
 # Representative traces
 
 ```{r}
-BN_baseline <- import_ABF_file("Data/23711004.abf")
-BN_insulin <- import_ABF_file("Data/23711009.abf")
+BN_baseline <- import_ABF_file_from_package("Data/23711004.abf")
+BN_insulin <- import_ABF_file_from_package("Data/23711009.abf")
 
 
+BN_baseline <- import_ABF_file_from_package("Data/sample_abf.abf")
+save(BN_baseline, file = "sample_abf.rda")
+
+
+source(here("Scripts/Functions.R"), local = knitr::knit_global())
 
 make_representative_sp_trace(
   recording_name = BN_baseline,
-  plot_treatment = "Control",
-  is_baseline = "yes",
+  plot_colour = "#6600cc",
   include_scale_bar = "yes",
-  plot_episode = "epi1"
-)
+  plot_episode = "epi1",
+  scale_bar_x_length = 1,
+  scale_bar_y_length = 10,
+  plot_x_min = 1,
+  plot_x_max = 3
+  )
 make_representative_sp_trace(
   recording_name = BN_insulin,
   plot_treatment = "Control",
